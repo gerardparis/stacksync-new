@@ -16,24 +16,24 @@ public class DAOFactory {
 		this.type = type;
 	}
 
-	public WorkspaceDAO getWorkspaceDao(Connection connection) {
-		return new PostgresqlWorkspaceDAO(connection);
+	public WorkspaceDAO getWorkspaceDao() {
+		return new PostgresqlWorkspaceDAO();
 	}
 
-	public UserDAO getUserDao(Connection connection) {
-		return new PostgresqlUserDAO(connection);
+	public UserDAO getUserDao() {
+		return new PostgresqlUserDAO();
 	}
 
-	public ItemDAO getItemDAO(Connection connection) {
-		return new PostgresqlItemDAO(connection);
+	public ItemDAO getItemDAO() {
+		return new PostgresqlItemDAO();
 	}
 
-	public ItemVersionDAO getItemVersionDAO(Connection connection) {
-		return new PostgresqlItemVersionDao(connection);
+	public ItemVersionDAO getItemVersionDAO() {
+		return new PostgresqlItemVersionDao();
 	}
 
-	public DeviceDAO getDeviceDAO(Connection connection) {
-		return new PostgresqlDeviceDAO(connection);
+	public DeviceDAO getDeviceDAO() {
+		return new PostgresqlDeviceDAO();
 	}
 
 	public String getType() {

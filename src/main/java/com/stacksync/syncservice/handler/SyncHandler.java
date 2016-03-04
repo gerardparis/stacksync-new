@@ -32,13 +32,11 @@ public interface SyncHandler {
 	public List<Workspace> doGetWorkspaces(User user) throws NoWorkspacesFoundException;
 
 	public Workspace doShareFolder(User user, List<String> emails, Item item, boolean isEncrypted)
-			throws ShareProposalNotCreatedException, UserNotFoundException;
+			throws ShareProposalNotCreatedException, UserNotFoundException, DAOException;
 
 	public void doUpdateWorkspace(User user, Workspace workspace) throws UserNotFoundException,
 			WorkspaceNotUpdatedException;
 
 	public User doGetUser(String email) throws UserNotFoundException;
-	
-	public Connection getConnection();
 
 }

@@ -1,6 +1,5 @@
 package com.stacksync.syncservice.db.postgresql;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
@@ -9,6 +8,7 @@ import org.apache.log4j.Logger;
 
 import com.stacksync.commons.models.Device;
 import com.stacksync.commons.models.User;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.db.DeviceDAO;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.util.Constants;
@@ -17,12 +17,12 @@ public class PostgresqlDeviceDAO extends PostgresqlDAO implements DeviceDAO {
 
 	private static final Logger logger = Logger.getLogger(PostgresqlDeviceDAO.class.getName());
 
-	public PostgresqlDeviceDAO(Connection connection) {
-		super(connection);
+	public PostgresqlDeviceDAO() {
+		super();
 	}
 
 	@Override
-	public Device get(UUID deviceID) throws DAOException {
+	public Device get(UUID deviceID, DAOPersistenceContext persistenceContext) throws DAOException {
 		
 		// API device ID is not stored in the database
 		if(deviceID == Constants.API_DEVICE_ID){
@@ -35,11 +35,12 @@ public class PostgresqlDeviceDAO extends PostgresqlDAO implements DeviceDAO {
 		String query = "SELECT * FROM device WHERE id = ?::uuid";
 
 		try {
-			resultSet = executeQuery(query, new Object[] { deviceID });
+			resultSet = executeQuery(query, new Object[] { deviceID }, persistenceContext);
 
 			if (resultSet.next()) {
 				device = mapDevice(resultSet);
 			}
+                        
 		} catch (SQLException e) {
 			throw new DAOException(e);
 		}
@@ -48,7 +49,7 @@ public class PostgresqlDeviceDAO extends PostgresqlDAO implements DeviceDAO {
 	}
 
 	@Override
-	public void add(Device device) throws DAOException {
+	public void add(Device device, DAOPersistenceContext persistenceContext) throws DAOException {
 		if (!device.isValid()) {
 			throw new IllegalArgumentException("Device attributes not set");
 		}
@@ -59,7 +60,7 @@ public class PostgresqlDeviceDAO extends PostgresqlDAO implements DeviceDAO {
 		String query = "INSERT INTO device (name, user_id, os, created_at, last_access_at, last_ip, app_version) "
 				+ "VALUES (?, ?::uuid, ?, now(), now(), ?::inet, ?)";
 
-		UUID id = (UUID) executeUpdate(query, values);
+		UUID id = (UUID) executeUpdate(query, values, persistenceContext);
 
 		if (id != null) {
 			device.setId(id);
@@ -67,7 +68,7 @@ public class PostgresqlDeviceDAO extends PostgresqlDAO implements DeviceDAO {
 	}
 
 	@Override
-	public void update(Device device) throws DAOException {
+	public void update(Device device, DAOPersistenceContext persistenceContext) throws DAOException {
 		if (device.getId() == null || !device.isValid()) {
 			throw new IllegalArgumentException("Device attributes not set");
 		}
@@ -78,7 +79,7 @@ public class PostgresqlDeviceDAO extends PostgresqlDAO implements DeviceDAO {
 				+ "WHERE id = ?::uuid and user_id = ?::uuid";
 
 		try {
-			executeUpdate(query, values);
+			executeUpdate(query, values, persistenceContext);
 		} catch (DAOException e) {
 			logger.error(e);
 			throw new DAOException(e);
@@ -86,12 +87,12 @@ public class PostgresqlDeviceDAO extends PostgresqlDAO implements DeviceDAO {
 	}
 
 	@Override
-	public void delete(UUID deviceID) throws DAOException {
+	public void delete(UUID deviceID, DAOPersistenceContext persistenceContext) throws DAOException {
 		Object[] values = { deviceID };
 
 		String query = "DELETE FROM device WHERE id = ?::uuid";
 
-		executeUpdate(query, values);
+		executeUpdate(query, values, persistenceContext);
 	}
 
 	private Device mapDevice(ResultSet resultSet) throws SQLException {

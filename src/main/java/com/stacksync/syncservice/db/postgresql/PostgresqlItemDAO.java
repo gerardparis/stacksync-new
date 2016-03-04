@@ -1,6 +1,6 @@
 package com.stacksync.syncservice.db.postgresql;
 
-import java.sql.Connection;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -16,24 +16,25 @@ import com.stacksync.syncservice.db.DAOUtil;
 import com.stacksync.syncservice.db.ItemDAO;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.handler.Handler.Status;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 
 public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	private static final Logger logger = Logger
 			.getLogger(PostgresqlItemDAO.class.getName());
 
-	public PostgresqlItemDAO(Connection connection) {
-		super(connection);
+	public PostgresqlItemDAO() {
+		super();
 	}
 
 	@Override
-	public Item findById(Long item1ID) throws DAOException {
+	public Item findById(Long item1ID, DAOPersistenceContext persistenceContext) throws DAOException {
 		ResultSet resultSet = null;
 		Item item = null;
 
 		String query = "SELECT * FROM item WHERE id = ?";
 
 		try {
-			resultSet = executeQuery(query, new Object[] { item1ID });
+			resultSet = executeQuery(query, new Object[] { item1ID }, persistenceContext);
 
 			if (resultSet.next()) {
 				item = DAOUtil.getItemFromResultSet(resultSet);
@@ -47,7 +48,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	}
 
 	@Override
-	public void add(Item item) throws DAOException {
+	public void add(Item item, DAOPersistenceContext persistenceContext) throws DAOException {
 
 		if (!item.isValid()) {
 			throw new IllegalArgumentException("Item attributes not set");
@@ -63,7 +64,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 				+ " client_parent_file_version ) "
 				+ "VALUES ( ?::uuid, ?, ?, ?, ?, ?, ? )";
 
-		Long id = (Long)executeUpdate(query, values);
+		Long id = (Long)executeUpdate(query, values, persistenceContext);
 
 		if (id != null) {
 			item.setId(id);
@@ -72,16 +73,16 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	}
 
 	@Override
-	public void put(Item item) throws DAOException {
+	public void put(Item item, DAOPersistenceContext persistenceContext) throws DAOException {
 		if (item.getId() == null) {
-			add(item);
+			add(item, persistenceContext);
 		} else {
-			update(item);
+			update(item, persistenceContext);
 		}
 	}
 
 	@Override
-	public void update(Item item) throws DAOException {
+	public void update(Item item, DAOPersistenceContext persistenceContext) throws DAOException {
 		if (item.getId() == null || !item.isValid()) {
 			throw new IllegalArgumentException("Item attributes not set");
 		}
@@ -102,18 +103,18 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 				+ "mimetype = ?, " + "is_folder = ?, "
 				+ "client_parent_file_version = ? " + "WHERE id = ?";
 
-		executeUpdate(query, values);
+		executeUpdate(query, values, persistenceContext);
 
 	}
 
 	@Override
-	public void delete(Long id) throws DAOException {
+	public void delete(Long id, DAOPersistenceContext persistenceContext) throws DAOException {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public List<ItemMetadata> getItemsByWorkspaceId(UUID workspaceId)
+	public List<ItemMetadata> getItemsByWorkspaceId(UUID workspaceId, DAOPersistenceContext persistenceContext)
 			throws DAOException {
 
 		Object[] values = { workspaceId, workspaceId };
@@ -149,7 +150,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 		ResultSet result = null;
 		List<ItemMetadata> items;
 		try {
-			result = executeQuery(query, values);
+			result = executeQuery(query, values, persistenceContext);
 
 			items = new ArrayList<ItemMetadata>();
 
@@ -168,7 +169,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	}
 
 	@Override
-	public List<ItemMetadata> getItemsById(Long id) throws DAOException {
+	public List<ItemMetadata> getItemsById(Long id, DAOPersistenceContext persistenceContext) throws DAOException {
 		Object[] values = { id };
 		
 		String query = "WITH    RECURSIVE "
@@ -203,7 +204,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 		List<ItemMetadata> list = new ArrayList<ItemMetadata>();
 
 		try {
-			result = executeQuery(query, values);
+			result = executeQuery(query, values, persistenceContext);
 
 			if (!resultSetHasRows(result)) {
 				throw new DAOException(DAOError.FILE_NOT_FOUND);
@@ -225,7 +226,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 
 	@Override
 	public ItemMetadata findById(Long id, Boolean includeList,
-			Long version, Boolean includeDeleted, Boolean includeChunks)
+			Long version, Boolean includeDeleted, Boolean includeChunks, DAOPersistenceContext persistenceContext)
 			throws DAOException {
 		int maxLevel = includeList ? 2 : 1;
 		String targetVersion = (version == null) ? "i.latest_version" : version
@@ -266,7 +267,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 		ItemMetadata item = null;
 
 		try {
-			result = executeQuery(query, values);
+			result = executeQuery(query, values, persistenceContext);
 
 			if (!resultSetHasRows(result)) {
 				throw new DAOException(DAOError.FILE_NOT_FOUND);
@@ -305,7 +306,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 
 	@Override
 	public ItemMetadata findByUserId(UUID userId,
-			Boolean includeDeleted) throws DAOException {
+			Boolean includeDeleted, DAOPersistenceContext persistenceContext) throws DAOException {
 		// TODO: check include_deleted
 		Object[] values = { userId };
 
@@ -343,7 +344,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 		rootMetadata.setIsRoot(true);
 
 		try {
-			result = executeQuery(query, values);
+			result = executeQuery(query, values, persistenceContext);
 
 			while (result.next()) {
 				ItemMetadata itemMetadata = DAOUtil
@@ -368,7 +369,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	}
 
 	@Override
-	public ItemMetadata findItemVersionsById(Long fileId) throws DAOException {
+	public ItemMetadata findItemVersionsById(Long fileId, DAOPersistenceContext persistenceContext) throws DAOException {
 		// TODO: check include_deleted
 		Object[] values = { fileId };
 		
@@ -383,7 +384,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 		ItemMetadata rootMetadata = new ItemMetadata();
 
 		try {
-			result = executeQuery(query, values);
+			result = executeQuery(query, values, persistenceContext);
 
 			while (result.next()) {
 				ItemMetadata itemMetadata = DAOUtil
@@ -418,7 +419,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	}
 	
 	@Override
-	public List<String> migrateItem(Long itemId, UUID workspaceId) throws DAOException{
+	public List<String> migrateItem(Long itemId, UUID workspaceId, DAOPersistenceContext persistenceContext) throws DAOException{
 		
 		Object[] values = { itemId, workspaceId.toString() };
 		
@@ -438,12 +439,12 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 			+ " FROM q "
 			+ " WHERE q.id = i3.id";
 		
-		executeUpdate(query, values);
+		executeUpdate(query, values, persistenceContext);
 		
 		List<String> chunksToMigrate;
 		
 		try{
-			chunksToMigrate = getChunksToMigrate(itemId);
+			chunksToMigrate = getChunksToMigrate(itemId, persistenceContext);
 		}catch (SQLException e){
 			throw new DAOException(e);
 		}
@@ -452,13 +453,13 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 		
 	}
 	
-	private List<String> getChunksToMigrate(Long itemId) throws DAOException, SQLException {
+	private List<String> getChunksToMigrate(Long itemId, DAOPersistenceContext persistenceContext) throws DAOException, SQLException {
 		
 		Object[] values = { itemId };
 		
 		String query = "SELECT get_unique_chunks_to_migrate(?) AS chunks";
 		
-		ResultSet result = executeQuery(query, values);
+		ResultSet result = executeQuery(query, values, persistenceContext);
 		List<String> chunksList;
 		
 		if (result.next()){

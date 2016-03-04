@@ -11,6 +11,7 @@ import org.apache.log4j.Logger;
 
 import com.stacksync.commons.models.User;
 import com.stacksync.syncservice.db.DAOError;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.db.UserDAO;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.exceptions.dao.NoResultReturnedDAOException;
@@ -18,19 +19,19 @@ import com.stacksync.syncservice.exceptions.dao.NoResultReturnedDAOException;
 public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 	private static final Logger logger = Logger.getLogger(PostgresqlUserDAO.class.getName());
 
-	public PostgresqlUserDAO(Connection connection) {
-		super(connection);
+	public PostgresqlUserDAO() {
+		super();
 	}
 
 	@Override
-	public User findById(UUID userID) throws DAOException {
+	public User findById(UUID userID, DAOPersistenceContext persistenceContext) throws DAOException {
 		ResultSet resultSet = null;
 		User user = null;
 
 		String query = "SELECT id, name, email, swift_user, swift_account, quota_limit, quota_used_logical, quota_used_real " + " FROM \"user1\" WHERE id = ?::uuid";
 
 		try {
-			resultSet = executeQuery(query, new Object[] { userID });
+			resultSet = executeQuery(query, new Object[] { userID }, persistenceContext);
 
 			if (resultSet.next()) {
 				user = mapUser(resultSet);
@@ -48,7 +49,7 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 	}
 	
 	@Override
-	public User getByEmail(String email) throws DAOException {
+	public User getByEmail(String email, DAOPersistenceContext persistenceContext) throws DAOException {
 
 		ResultSet resultSet = null;
 		User user = null;
@@ -56,7 +57,7 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 		String query = "SELECT * " + " FROM \"user1\" WHERE email = lower(?)";
 
 		try {
-			resultSet = executeQuery(query, new Object[] { email });
+			resultSet = executeQuery(query, new Object[] { email }, persistenceContext);
 			
 			if (resultSet.next()) {
 				user = mapUser(resultSet);
@@ -71,14 +72,14 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 	}
 
 	@Override
-	public List<User> findAll() throws DAOException {
+	public List<User> findAll(DAOPersistenceContext persistenceContext) throws DAOException {
 
 		ResultSet resultSet = null;
 		List<User> list = new ArrayList<User>();
 
 		String query = "SELECT * FROM user1";
 		try {
-			resultSet = executeQuery(query, null);
+			resultSet = executeQuery(query, null, persistenceContext);
 
 			while (resultSet.next()) {
 				list.add(mapUser(resultSet));
@@ -91,7 +92,7 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 	}
 
 	@Override
-	public void add(User user) throws DAOException {
+	public void add(User user, DAOPersistenceContext persistenceContext) throws DAOException {
 		if (!user.isValid()) {
 			throw new IllegalArgumentException("User attributes not set");
 		}
@@ -101,7 +102,7 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 		String query = "INSERT INTO user1 (email, name, swift_user, swift_account, quota_limit, quota_used_logical, quota_used_real) VALUES (?, ?, ?, ?, ?, ?)";
 
 		try {
-			UUID userId = (UUID) executeUpdate(query, values);
+			UUID userId = (UUID) executeUpdate(query, values, persistenceContext);
 			user.setId(userId);
 		} catch (DAOException e) {
 			logger.error(e);
@@ -110,7 +111,7 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 	}
 
 	@Override
-	public void update(User user) throws DAOException {
+	public void update(User user, DAOPersistenceContext persistenceContext) throws DAOException {
 		if (user.getId() == null || !user.isValid()) {
 			throw new IllegalArgumentException("User attributes not set");
 		}
@@ -120,7 +121,7 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 		String query = "UPDATE user1 SET email = ?, name = ?, swift_user = ?, swift_account = ?, quota_limit = ?, quota_used_logical = ?, quota_used_real = ? WHERE id = ?::uuid";
 
 		try {
-			executeUpdate(query, values);
+			executeUpdate(query, values, persistenceContext);
 		} catch (DAOException e) {
 			logger.error(e);
 			throw new DAOException(e);
@@ -129,12 +130,12 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 	
 	
 	@Override
-	public void delete(UUID userID) throws DAOException {
+	public void delete(UUID userID, DAOPersistenceContext persistenceContext) throws DAOException {
 		Object[] values = { userID };
 
 		String query = "DELETE FROM user1 WHERE id = ?";
 
-		executeUpdate(query, values);
+		executeUpdate(query, values, persistenceContext);
 	}
 
 	private User mapUser(ResultSet resultSet) throws SQLException {
@@ -151,7 +152,7 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 	}
 
 	@Override
-	public List<User> findByItemId(Long itemId) throws DAOException {
+	public List<User> findByItemId(Long itemId, DAOPersistenceContext persistenceContext) throws DAOException {
 		ArrayList<User> users = new ArrayList<User>();
 		Object[] values = { itemId };
 
@@ -164,7 +165,7 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 		ResultSet result = null;
 
 		try {
-			result = executeQuery(query, values);
+			result = executeQuery(query, values, persistenceContext);
 
 			while (result.next()) {
 				User user = mapUser(result);
@@ -180,7 +181,7 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 	}
 
 	@Override
-	public void updateAvailableQuota(User user) throws DAOException {
+	public void updateAvailableQuota(User user, DAOPersistenceContext persistenceContext) throws DAOException {
 		// TODO Auto-generated method stub
 		if (user.getId() == null || !user.isValid()) {
             throw new IllegalArgumentException("User attributes not set");
@@ -191,7 +192,7 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
         String query = "UPDATE user1 SET quota_used_logical = ?  WHERE id = ?::uuid";
 
         try {
-            executeUpdate(query, values);
+            executeUpdate(query, values, persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             throw new DAOException(e);

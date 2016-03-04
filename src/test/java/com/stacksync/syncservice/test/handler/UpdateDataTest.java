@@ -40,11 +40,8 @@ public class UpdateDataTest {
 		handler = new SQLAPIHandler(pool);
 		DAOFactory factory = new DAOFactory(datasource);
 
-		Connection connection = pool.getConnection();
-
-		
-		workspaceDAO = factory.getWorkspaceDao(connection);
-		userDao = factory.getUserDao(connection);
+		workspaceDAO = factory.getWorkspaceDao();
+		userDao = factory.getUserDao();
 
 		user1 = new User(UUID.fromString("225130d4-c817-4df0-b4e2-13271b494ae5"), "tester_2", "tester_2", "AUTH_5e446d39e4294b57831da7ce3dd0d2c2", "test@stacksync.org", 100000L,0L, 0L);
 		

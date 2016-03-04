@@ -19,11 +19,13 @@ import com.stacksync.commons.models.Workspace;
 import com.stacksync.syncservice.db.ConnectionPool;
 import com.stacksync.syncservice.db.ConnectionPoolFactory;
 import com.stacksync.syncservice.db.DAOFactory;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.db.UserDAO;
 import com.stacksync.syncservice.db.WorkspaceDAO;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.handler.Handler;
 import com.stacksync.syncservice.handler.SQLSyncHandler;
+import com.stacksync.syncservice.test.benchmark.db.DatabaseHelper;
 import com.stacksync.syncservice.util.Config;
 
 public class SharingTest {
@@ -48,14 +50,20 @@ public class SharingTest {
 
 		Connection connection = pool.getConnection();
 
-		workspaceDAO = factory.getWorkspaceDao(connection);
-		userDao = factory.getUserDao(connection);
+		workspaceDAO = factory.getWorkspaceDao();
+		userDao = factory.getUserDao();
 
 		user1 = new User(UUID.randomUUID(), "tester1", "tester1", "AUTH_12312312", "a@a.a", 100L,0L, 0L);
 
-		userDao.add(user1);
+                 DatabaseHelper db = new DatabaseHelper(pool);
+                        
+                DAOPersistenceContext persistenceContext = db.beginTransaction();
+                
+		userDao.add(user1, persistenceContext);
 		workspace1 = new Workspace(null, 1, user1, false, false);
-		workspaceDAO.add(workspace1);
+		workspaceDAO.add(workspace1, persistenceContext);
+                
+                db.commitTransaction(persistenceContext);
 
 	}
 

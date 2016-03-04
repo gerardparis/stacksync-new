@@ -35,7 +35,7 @@ public class GetMetadataTest {
 
 			Connection connection = pool.getConnection();
 
-			userDao = factory.getUserDao(connection);
+			userDao = factory.getUserDao();
 
 			/*
 			 * UNCOMMENT TO INITIALIZE DATABASE (SLOW)

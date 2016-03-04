@@ -37,6 +37,7 @@ import com.stacksync.commons.exceptions.NoWorkspacesFoundException;
 import com.stacksync.commons.exceptions.ShareProposalNotCreatedException;
 import com.stacksync.commons.exceptions.UserNotFoundException;
 import com.stacksync.commons.exceptions.WorkspaceNotUpdatedException;
+import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.handler.SQLSyncHandler;
 import com.stacksync.syncservice.handler.SyncHandler;
 import com.stacksync.syncservice.util.Config;
@@ -45,25 +46,13 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 
 	private transient static final Logger logger = Logger.getLogger(SyncServiceImp.class.getName());
 	private transient static final long serialVersionUID = 1L;
-	private transient int index;
-	private transient int numThreads;
-	private transient ConnectionPool pool;
-	private transient SyncHandler[] handlers;
+	private transient SyncHandler handler;
 	private transient Broker broker;
 
 	public SyncServiceImp(Broker broker, ConnectionPool pool) throws Exception {
 		super();
 		this.broker = broker;
-		this.pool = pool;
-
-		index = 0;
-		// Create handlers
-		numThreads = Integer.parseInt(this.broker.getEnvironment().getProperty(ParameterQueue.NUM_THREADS, "1"));
-		handlers = new SyncHandler[numThreads];
-
-		for (int i = 0; i < numThreads; i++) {
-			handlers[i] = new SQLSyncHandler(this.pool);
-		}
+		handler = new SQLSyncHandler(pool);
 	}
 
 	@Override
@@ -75,7 +64,7 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 		user.setId(request.getUserId());
 		Workspace workspace = new Workspace(request.getWorkspaceId());
 
-		List<ItemMetadata> list = getHandler().doGetChanges(user, workspace);
+		List<ItemMetadata> list = handler.doGetChanges(user, workspace);
 
 		return list;
 	}
@@ -87,7 +76,7 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 		User user = new User();
 		user.setId(request.getUserId());
 
-		List<Workspace> workspaces = getHandler().doGetWorkspaces(user);
+		List<Workspace> workspaces = handler.doGetWorkspaces(user);
 
 		return workspaces;
 	}
@@ -103,7 +92,7 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 			Device device = new Device(request.getDeviceId());
 			Workspace workspace = new Workspace(request.getWorkspaceId());
 
-			CommitNotification result = getHandler().doCommit(user, workspace, device, request.getItems());
+			CommitNotification result = handler.doCommit(user, workspace, device, request.getItems());
                         result.setRequestId(request.getRequestId());
                         
 			UUID id = workspace.getId();
@@ -113,15 +102,11 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 
 			logger.debug("Consumer: Response sent to workspace \"" + workspace + "\"");
 
-		} catch (Exception e) {
+		} catch (DAOException e) {
 			logger.error(e);
-		}
-	}
-
-	private synchronized SyncHandler getHandler() {
-		SyncHandler handler = handlers[index++ % numThreads];
-		logger.debug("Using handler: " + handler + " using connection: " + handler.getConnection());
-		return handler;
+		} catch (RemoteException e) {
+                        logger.error(e);
+            }
 	}
 
 	@Override
@@ -141,7 +126,7 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 		device.setLastIp(request.getIp());
 		device.setAppVersion(request.getAppVersion());
 
-		UUID deviceId = getHandler().doUpdateDevice(device);
+		UUID deviceId = handler.doUpdateDevice(device);
 
 		return deviceId;
 	}
@@ -150,6 +135,7 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 	public void createShareProposal(ShareProposalRequest request) throws ShareProposalNotCreatedException,
 			UserNotFoundException {
 
+            try{
 		logger.debug(request);
 
 		User user = new User();
@@ -158,7 +144,7 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 		Item item = new Item(request.getItemId());
 
 		// Create share proposal
-		Workspace workspace = getHandler().doShareFolder(user, request.getEmails(), item, request.isEncrypted());
+		Workspace workspace = handler.doShareFolder(user, request.getEmails(), item, request.isEncrypted());
 
 		// Create notification
 		ShareProposalNotification notification = new ShareProposalNotification(workspace.getId(),
@@ -185,6 +171,9 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 				logger.error(String.format("Could not notify user: '%s'", addressee.getId()), e);
 			}
 		}
+            } catch (DAOException e) {
+                logger.error(e);
+            }
 	}
 
 	@Override
@@ -200,7 +189,7 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 		workspace.setName(request.getWorkspaceName());
 		workspace.setParentItem(item);
 
-		getHandler().doUpdateWorkspace(user, workspace);
+		handler.doUpdateWorkspace(user, workspace);
 
 		// Create notification
 		UpdateWorkspaceNotification notification = new UpdateWorkspaceNotification(workspace.getId(),
@@ -221,7 +210,7 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 	public AccountInfo getAccountInfo(GetAccountRequest request) throws UserNotFoundException {
 		logger.debug(request);
 
-		User user = getHandler().doGetUser(request.getEmail());
+		User user = handler.doGetUser(request.getEmail());
 
 		AccountInfo accountInfo = new AccountInfo();
 

@@ -15,6 +15,7 @@ import com.stacksync.commons.models.Workspace;
 import com.stacksync.syncservice.db.ConnectionPool;
 import com.stacksync.syncservice.db.ConnectionPoolFactory;
 import com.stacksync.syncservice.db.DAOFactory;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.db.DeviceDAO;
 import com.stacksync.syncservice.db.ItemDAO;
 import com.stacksync.syncservice.db.ItemVersionDAO;
@@ -23,6 +24,7 @@ import com.stacksync.syncservice.db.WorkspaceDAO;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.rpc.parser.IParser;
 import com.stacksync.syncservice.rpc.parser.JSONParser;
+import com.stacksync.syncservice.test.benchmark.db.DatabaseHelper;
 import com.stacksync.syncservice.util.Config;
 
 public class AdvancedHandlerTest {
@@ -52,21 +54,27 @@ public class AdvancedHandlerTest {
 
 			DAOFactory factory = new DAOFactory(datasource);
 
-			workspaceDAO = factory.getWorkspaceDao(connection);
-			userDao = factory.getUserDao(connection);
-			deviceDao = factory.getDeviceDAO(connection);
-			objectDao = factory.getItemDAO(connection);
-			oversionDao = factory.getItemVersionDAO(connection);
+			workspaceDAO = factory.getWorkspaceDao();
+			userDao = factory.getUserDao();
+			deviceDao = factory.getDeviceDAO();
+			objectDao = factory.getItemDAO();
+			oversionDao = factory.getItemVersionDAO();
 
 
+                        DatabaseHelper db = new DatabaseHelper(pool);
+                        
+                        DAOPersistenceContext persistenceContext = db.beginTransaction();
+                        
 			User user = new User(user1, "tester1", "tester1", "AUTH_12312312", "a@a.a", 100L, 0L, 0L);
-			userDao.add(user);
+			userDao.add(user, persistenceContext);
 
 			Workspace workspace = new Workspace(null,  1, user, false, false);
-			workspaceDAO.add(workspace);
+			workspaceDAO.add(workspace, persistenceContext);
 
 			Device device = new Device(null, "junitdevice", user);
-			deviceDao.add(device);
+			deviceDao.add(device, persistenceContext);
+                        
+                        db.commitTransaction(persistenceContext);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -74,8 +82,15 @@ public class AdvancedHandlerTest {
 	}
 
 	@AfterClass
-	public static void cleanData() throws DAOException {
-		userDao.delete(user1);
+	public static void cleanData() throws DAOException, Exception {
+            
+                DatabaseHelper db = new DatabaseHelper(pool);
+                        
+                DAOPersistenceContext persistenceContext = db.beginTransaction();
+                        
+		userDao.delete(user1, persistenceContext);
+                
+                db.commitTransaction(persistenceContext);
 	}
 
 	@Before

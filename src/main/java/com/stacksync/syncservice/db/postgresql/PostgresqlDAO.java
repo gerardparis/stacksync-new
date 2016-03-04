@@ -10,24 +10,23 @@ import java.sql.SQLException;
 import org.apache.log4j.Logger;
 
 import com.stacksync.syncservice.db.DAOError;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.exceptions.dao.NoRowsAffectedDAOException;
 
 public class PostgresqlDAO {
 	private static final Logger logger = Logger.getLogger(PostgresqlDAO.class.getName());
-	protected Connection connection;
 
-	public PostgresqlDAO(Connection connection) {
-		this.connection = connection;
+	public PostgresqlDAO() {
 	}
 
-	protected ResultSet executeQuery(String query, Object[] values) throws DAOException {
+	protected ResultSet executeQuery(String query, Object[] values, DAOPersistenceContext persistenceContext) throws DAOException {
 
 		PreparedStatement preparedStatement = null;
 		ResultSet resultSet = null;
 
 		try {
-			preparedStatement = prepareStatement(connection, query, false, values);
+			preparedStatement = prepareStatement(persistenceContext.getConnection(), query, false, values);
 			resultSet = preparedStatement.executeQuery();
 
 		} catch (SQLException e) {
@@ -38,14 +37,14 @@ public class PostgresqlDAO {
 		return resultSet;
 	}
 
-	protected Object executeUpdate(String query, Object[] values) throws DAOException {
+	protected Object executeUpdate(String query, Object[] values, DAOPersistenceContext persistenceContext) throws DAOException {
 
 		Object key = null;
 		PreparedStatement preparedStatement = null;
 		ResultSet generatedKeys = null;
 
 		try {
-			preparedStatement = prepareStatement(connection, query, true, values);
+			preparedStatement = prepareStatement(persistenceContext.getConnection(), query, true, values);
 			int affectedRows = preparedStatement.executeUpdate();
 			if (affectedRows == 0) {
 				throw new NoRowsAffectedDAOException("Execute update error: no rows affected.");

@@ -17,10 +17,12 @@ import com.stacksync.commons.exceptions.DeviceNotValidException;
 import com.stacksync.commons.exceptions.NoWorkspacesFoundException;
 import com.stacksync.commons.exceptions.UserNotFoundException;
 import com.stacksync.commons.exceptions.WorkspaceNotUpdatedException;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.exceptions.dao.NoResultReturnedDAOException;
 import com.stacksync.syncservice.exceptions.dao.NoRowsAffectedDAOException;
 import com.stacksync.syncservice.exceptions.storage.NoStorageManagerAvailable;
+import java.util.logging.Level;
 
 public class SQLSyncHandler extends Handler implements SyncHandler {
 
@@ -35,11 +37,15 @@ public class SQLSyncHandler extends Handler implements SyncHandler {
 		List<ItemMetadata> responseObjects = new ArrayList<ItemMetadata>();
 
 		try {
-			responseObjects = itemDao.getItemsByWorkspaceId(workspace.getId());
+                        DAOPersistenceContext persistenceContext = startConnection();
+			
+                        responseObjects = itemDao.getItemsByWorkspaceId(workspace.getId(), persistenceContext);
+                        
 		} catch (DAOException e) {
 			logger.error(e.toString(), e);
 		}
-
+                
+                
 		return responseObjects;
 	}
 
@@ -49,8 +55,10 @@ public class SQLSyncHandler extends Handler implements SyncHandler {
 		List<Workspace> workspaces = new ArrayList<Workspace>();
 
 		try {
-			workspaces = workspaceDAO.getByUserId(user.getId());
-
+                        DAOPersistenceContext persistenceContext = startConnection();
+                        
+			workspaces = workspaceDAO.getByUserId(user.getId(),persistenceContext);
+                        
 		} catch (NoResultReturnedDAOException e) {
 			logger.error(e);
 			throw new NoWorkspacesFoundException(String.format("No workspaces found for user: %s", user.getId()));
@@ -66,8 +74,11 @@ public class SQLSyncHandler extends Handler implements SyncHandler {
 	public UUID doUpdateDevice(Device device) throws UserNotFoundException, DeviceNotValidException,
 			DeviceNotUpdatedException {
 
-		try {
-			User dbUser = userDao.findById(device.getUser().getId());
+                
+                DAOPersistenceContext persistenceContext;
+		try {	
+                        persistenceContext = beginTransaction();
+                        User dbUser = userDao.findById(device.getUser().getId(),persistenceContext);
 			device.setUser(dbUser);
 
 		} catch (NoResultReturnedDAOException e) {
@@ -80,10 +91,13 @@ public class SQLSyncHandler extends Handler implements SyncHandler {
 
 		try {
 			if (device.getId() == null) {
-				deviceDao.add(device);
+				deviceDao.add(device,persistenceContext);
 			} else {
-				deviceDao.update(device);
+				deviceDao.update(device,persistenceContext);
 			}
+                
+                        commitTransaction(persistenceContext);
+                        
 		} catch (NoRowsAffectedDAOException e) {
 			logger.error(e);
 			throw new DeviceNotUpdatedException(e);
@@ -103,9 +117,11 @@ public class SQLSyncHandler extends Handler implements SyncHandler {
 	public void doUpdateWorkspace(User user, Workspace workspace) throws UserNotFoundException,
 			WorkspaceNotUpdatedException {
 
+                DAOPersistenceContext persistenceContext;
 		// Check the owner
 		try {
-			user = userDao.findById(user.getId());
+                        persistenceContext = beginTransaction();
+			user = userDao.findById(user.getId(),persistenceContext);
 		} catch (NoResultReturnedDAOException e) {
 			logger.warn(e);
 			throw new UserNotFoundException(e);
@@ -116,7 +132,8 @@ public class SQLSyncHandler extends Handler implements SyncHandler {
 
 		// Update the workspace
 		try {
-			workspaceDAO.update(user, workspace);
+			workspaceDAO.update(user, workspace,persistenceContext);
+                        commitTransaction(persistenceContext);
 		} catch (NoRowsAffectedDAOException e) {
 			logger.error(e);
 			throw new WorkspaceNotUpdatedException(e);
@@ -130,7 +147,8 @@ public class SQLSyncHandler extends Handler implements SyncHandler {
 	public User doGetUser(String email) throws UserNotFoundException {
 
 		try {
-			User user = userDao.getByEmail(email);
+                        DAOPersistenceContext persistenceContext = startConnection();
+			User user = userDao.getByEmail(email,persistenceContext);
 			return user;
 
 		} catch (NoResultReturnedDAOException e) {
@@ -141,5 +159,5 @@ public class SQLSyncHandler extends Handler implements SyncHandler {
 			throw new UserNotFoundException(e);
 		}
 	}
-
+      
 }

@@ -9,6 +9,7 @@ import com.stacksync.commons.models.Device;
 import com.stacksync.commons.models.Item;
 import com.stacksync.commons.models.User;
 import com.stacksync.commons.models.Workspace;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.test.benchmark.db.DatabaseHelper;
 
@@ -81,15 +82,19 @@ public class DBBenchmark extends Thread {
 		
 		try {
 			User user = new User(UUID.randomUUID(), "tester1", "tester1", "AUTH_12312312", "a@a.a", 100L, 0L, 0L);
-			dbHelper.addUser(user);
+			
+                        DAOPersistenceContext persistenceContext = dbHelper.beginTransaction();
+                        dbHelper.addUser(user, persistenceContext);
 			
 			Workspace workspace = new Workspace(null, 1, user, false, false);
-			dbHelper.addWorkspace(user, workspace);
+			dbHelper.addWorkspace(user, workspace, persistenceContext);
 
 			String deviceName = name + "_device";
 			Device device = new Device(null, deviceName, user);
-			dbHelper.addDevice(device);
+			dbHelper.addDevice(device, persistenceContext);
 
+                        dbHelper.commitTransaction(persistenceContext);
+                        
 			fillDB(workspace, device);
 
 			System.out.println("User -> " + user);

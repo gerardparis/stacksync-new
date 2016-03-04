@@ -20,6 +20,7 @@ import com.stacksync.commons.models.Workspace;
 import com.stacksync.commons.notifications.CommitNotification;
 import com.stacksync.syncservice.db.ConnectionPool;
 import com.stacksync.syncservice.db.DAOError;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.exceptions.InternalServerError;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.exceptions.dao.NoResultReturnedDAOException;
@@ -39,7 +40,7 @@ import com.stacksync.syncservice.util.Constants;
 public class SQLAPIHandler extends Handler implements APIHandler {
 
     private static final Logger logger = Logger.getLogger(SQLAPIHandler.class.getName());
-    private Device apiDevice = new Device(Constants.API_DEVICE_ID);
+    private final Device apiDevice = new Device(Constants.API_DEVICE_ID);
 
     public SQLAPIHandler(ConnectionPool pool) throws SQLException,
             NoStorageManagerAvailable {
@@ -57,13 +58,15 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         try {
 
+            DAOPersistenceContext persistenceContext = startConnection();
+            
             if (fileId == null) {
                 // retrieve metadata from the root folder
-                responseObject = this.itemDao.findByUserId(user.getId(), false);
+                responseObject = this.itemDao.findByUserId(user.getId(), false, persistenceContext);
             } else {
 
                 // check if user has permission on this file
-                List<User> users = this.userDao.findByItemId(fileId);
+                List<User> users = this.userDao.findByItemId(fileId, persistenceContext);
 
                 if (users.isEmpty()) {
                     throw new DAOException(DAOError.FILE_NOT_FOUND);
@@ -74,7 +77,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                 }
 
                 responseObject = this.itemDao.findById(fileId, false, version,
-                        false, includeChunks);
+                        false, includeChunks, persistenceContext);
             }
 
             if (responseObject.isFolder() != isFolder) {
@@ -82,7 +85,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
             }
 
             success = true;
-
+            
         } catch (DAOException e) {
             description = e.getError().getMessage();
             errorCode = e.getError().getCode();
@@ -104,14 +107,16 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         try {
 
+           DAOPersistenceContext persistenceContext = startConnection();
+           
             if (folderId == null) {
                 // retrieve metadata from the root folder
                 responseObject = this.itemDao.findByUserId(user.getId(),
-                        includeDeleted);
+                        includeDeleted, persistenceContext);
             } else {
 
                 // check if user has permission on this file
-                List<User> users = this.userDao.findByItemId(folderId);
+                List<User> users = this.userDao.findByItemId(folderId, persistenceContext);
 
                 if (users.isEmpty()) {
                     throw new DAOException(DAOError.FILE_NOT_FOUND);
@@ -122,9 +127,9 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                 }
 
                 responseObject = this.itemDao.findById(folderId, true, null,
-                        includeDeleted, false);
+                        includeDeleted, false, persistenceContext);
             }
-
+            
             success = true;
 
         } catch (DAOException e) {
@@ -142,8 +147,10 @@ public class SQLAPIHandler extends Handler implements APIHandler {
     public APICommitResponse createFile(User user, ItemMetadata fileToSave) {
 
         // Check the owner
+        DAOPersistenceContext persistenceContext;
         try {
-            user = userDao.findById(user.getId());
+            persistenceContext = startConnection();
+            user = userDao.findById(user.getId(), persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             return new APICommitResponse(fileToSave, false, 404,
@@ -152,7 +159,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         // Get user workspaces
         try {
-            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId());
+            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId(), persistenceContext);
             user.setWorkspaces(workspaces);
         } catch (DAOException e) {
             logger.error(e);
@@ -170,7 +177,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         if (fileToSave.getParentId() != null) {
             try {
                 parent = itemDao.findById(fileToSave.getParentId(),
-                        includeList, version, includeDeleted, includeChunks);
+                        includeList, version, includeDeleted, includeChunks, persistenceContext);
                 fileToSave.setParentVersion(parent.getVersion());
 
                 // check if parent is a folder
@@ -186,9 +193,9 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         } else {
             try {
                 parent = this.itemDao
-                        .findByUserId(user.getId(), includeDeleted);
+                        .findByUserId(user.getId(), includeDeleted, persistenceContext);
                 Workspace parentWorkspace = workspaceDAO
-                        .getDefaultWorkspaceByUserId(user.getId());
+                        .getDefaultWorkspaceByUserId(user.getId(), persistenceContext);
                 parent.setWorkspaceId(parentWorkspace.getId());
             } catch (DAOException e) {
                 return new APICommitResponse(fileToSave, false, e.getError()
@@ -241,9 +248,11 @@ public class SQLAPIHandler extends Handler implements APIHandler {
     @Override
     public APICommitResponse updateData(User user, ItemMetadata fileToUpdate) {
 
+        DAOPersistenceContext persistenceContext;
         // Check the owner
         try {
-            user = userDao.findById(user.getId());
+            persistenceContext = startConnection();
+            user = userDao.findById(user.getId(), persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             return new APICommitResponse(fileToUpdate, false, 404,
@@ -252,7 +261,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         // Get user workspaces
         try {
-            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId());
+            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId(), persistenceContext);
             user.setWorkspaces(workspaces);
         } catch (DAOException e) {
             logger.error(e);
@@ -269,7 +278,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         ItemMetadata file;
         try {
             file = itemDao.findById(fileToUpdate.getId(), includeList, version,
-                    includeDeleted, includeChunks);
+                    includeDeleted, includeChunks, persistenceContext);
         } catch (DAOException e) {
             return new APICommitResponse(fileToUpdate, false, 404,
                     "File not found");
@@ -321,8 +330,10 @@ public class SQLAPIHandler extends Handler implements APIHandler {
     public APICommitResponse updateMetadata(User user, ItemMetadata fileToUpdate, Boolean parentUpdated) {
 
         // Check the owner
+        DAOPersistenceContext persistenceContext;
         try {
-            user = userDao.findById(user.getId());
+            persistenceContext = startConnection();
+            user = userDao.findById(user.getId(), persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             return new APICommitResponse(fileToUpdate, false, 404,
@@ -331,7 +342,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         // Get user workspaces
         try {
-            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId());
+            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId(), persistenceContext);
             user.setWorkspaces(workspaces);
         } catch (DAOException e) {
             logger.error(e);
@@ -348,7 +359,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         ItemMetadata file;
         try {
             file = itemDao.findById(fileToUpdate.getId(), includeList, version,
-                    includeDeleted, includeChunks);
+                    includeDeleted, includeChunks, persistenceContext);
         } catch (DAOException e) {
             return new APICommitResponse(fileToUpdate, false, 404,
                     "File not found");
@@ -359,7 +370,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         if (fileToUpdate.getParentId() != null) {
             try {
                 parent = itemDao.findById(fileToUpdate.getParentId(),
-                        includeList, version, includeDeleted, includeChunks);
+                        includeList, version, includeDeleted, includeChunks, persistenceContext);
 
                 // check if parent is a folder
                 if (!parent.isFolder()) {
@@ -371,7 +382,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
             }
         } else {
             try {
-                parent = this.itemDao.findByUserId(user.getId(), includeDeleted);
+                parent = this.itemDao.findByUserId(user.getId(), includeDeleted, persistenceContext);
             } catch (DAOException e) {
                 return new APICommitResponse(fileToUpdate, false, e.getError().getCode(), e.getMessage());
             }
@@ -441,8 +452,10 @@ public class SQLAPIHandler extends Handler implements APIHandler {
     public APICreateFolderResponse createFolder(User user, ItemMetadata item) {
 
         // Check the owner
+        DAOPersistenceContext persistenceContext;
         try {
-            user = userDao.findById(user.getId());
+            persistenceContext = startConnection();
+            user = userDao.findById(user.getId(), persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             APICreateFolderResponse response = new APICreateFolderResponse(
@@ -460,7 +473,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
             try {
                 Workspace workspace = workspaceDAO
-                        .getDefaultWorkspaceByUserId(user.getId());
+                        .getDefaultWorkspaceByUserId(user.getId(), persistenceContext);
                 parentMetadata.setWorkspaceId(workspace.getId());
             } catch (DAOException e) {
                 logger.error(e);
@@ -506,13 +519,15 @@ public class SQLAPIHandler extends Handler implements APIHandler {
     public APIRestoreMetadata restoreMetadata(User user, ItemMetadata item) {
         try {
 
-            Item serverItem = itemDao.findById(item.getId());
+            DAOPersistenceContext persistenceContext = beginTransaction();
+            
+            Item serverItem = itemDao.findById(item.getId(), persistenceContext);
             ItemMetadata lastObjectVersion = itemDao.findById(item.getId(),
-                    false, null, false, false);
+                    false, null, false, false, persistenceContext);
             if (serverItem != null && lastObjectVersion != null) {
 
                 ItemMetadata metadata = itemVersionDao.findByItemIdAndVersion(
-                        serverItem.getId(), item.getVersion());
+                        serverItem.getId(), item.getVersion(), persistenceContext);
 
                 ItemVersion restoredObject = new ItemVersion(metadata);
 
@@ -523,7 +538,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                     restoredObject.setStatus(Status.CHANGED.toString());
 
                     // save restoredObject
-                    itemVersionDao.add(restoredObject);
+                    itemVersionDao.add(restoredObject, persistenceContext);
 
                     List<String> chunks = new ArrayList<String>();
                     // If no folder, create new chunks
@@ -531,11 +546,11 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                         for (Chunk chunk : restoredObject.getChunks()) {
                             chunks.add(chunk.getClientChunkName());
                         }
-                        this.createChunks(chunks, restoredObject);
+                        this.createChunks(chunks, restoredObject, persistenceContext);
                     }
 
                     serverItem.setLatestVersion(restoredObject.getVersion());
-                    itemDao.put(serverItem);
+                    itemDao.put(serverItem, persistenceContext);
 
                     item.setChecksum(restoredObject.getChecksum());
                     item.setChunks(chunks);
@@ -553,6 +568,8 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                     item.setStatus(restoredObject.getStatus());
                     item.setVersion(restoredObject.getVersion());
 
+                    commitTransaction(persistenceContext);
+                    
                     APIRestoreMetadata response = new APIRestoreMetadata(item,
                             true, 200, "");
                     return response;
@@ -578,8 +595,10 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         List<ItemMetadata> filesToDelete;
 
         // Check the owner
+        DAOPersistenceContext persistenceContext;
         try {
-            user = userDao.findById(user.getId());
+            persistenceContext = startConnection();
+            user = userDao.findById(user.getId(), persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             return new APIDeleteResponse(null, false, 404, "User not found.");
@@ -587,7 +606,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         // Get user workspaces
         try {
-            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId());
+            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId(), persistenceContext);
             user.setWorkspaces(workspaces);
         } catch (DAOException e) {
             logger.error(e);
@@ -597,7 +616,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         // check that the given file ID exists
         try {
-            filesToDelete = itemDao.getItemsById(item.getId());
+            filesToDelete = itemDao.getItemsById(item.getId(), persistenceContext);
         } catch (DAOException e) {
             return new APIDeleteResponse(null, false, 404,
                     "File or folder not found");
@@ -645,8 +664,10 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         ItemMetadata serverItem;
 
         // Check the owner
+        DAOPersistenceContext persistenceContext;
         try {
-            user = userDao.findById(user.getId());
+            persistenceContext = startConnection();
+            user = userDao.findById(user.getId(), persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             return new APIGetVersions(null, false, 404, "User not found.");
@@ -654,7 +675,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         // Get user workspaces
         try {
-            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId());
+            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId(), persistenceContext);
             user.setWorkspaces(workspaces);
         } catch (DAOException e) {
             logger.error(e);
@@ -664,7 +685,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         // check that the given file ID exists
         try {
-            serverItem = itemDao.findItemVersionsById(item.getId());
+            serverItem = itemDao.findItemVersionsById(item.getId(), persistenceContext);
         } catch (DAOException e) {
             return new APIGetVersions(null, false, 404,
                     "File or folder not found");
@@ -696,6 +717,9 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         } catch (UserNotFoundException e) {
             response = new APIShareFolderResponse(null, false, 404,
                     e.getMessage());
+        } catch (DAOException e) {
+            response = new APIShareFolderResponse(null, false, 404,
+                    e.getMessage());
         }
 
         return response;
@@ -719,6 +743,9 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         } catch (UserNotFoundException e) {
             response = new APIUnshareFolderResponse(null, null, false, false, 404,
                     e.getMessage());
+        } catch (DAOException e) {
+            response = new APIUnshareFolderResponse(null, null, false, false, 400,
+                    e.getMessage());
         }
 
         return response;
@@ -730,8 +757,10 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         APIGetFolderMembersResponse response;
 
         // Check the owner
+        DAOPersistenceContext persistenceContext;
         try {
-            user = userDao.findById(user.getId());
+            persistenceContext = startConnection();
+            user = userDao.findById(user.getId(),persistenceContext);
         } catch (NoResultReturnedDAOException e) {
             logger.warn(e);
             return new APIGetFolderMembersResponse(null, false, 404,
@@ -744,7 +773,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         // Get folder metadata
         try {
-            item = itemDao.findById(item.getId());
+            item = itemDao.findById(item.getId(), persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             return new APIGetFolderMembersResponse(null, false, 500,
@@ -756,14 +785,16 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                     "No folder found with the given ID.");
         }
 
-        List<UserWorkspace> members;
+        List<UserWorkspace> members = null;
         try {
             members = this.doGetWorkspaceMembers(user, item.getWorkspace());
         } catch (InternalServerError e) {
             return new APIGetFolderMembersResponse(null, false, 500,
                     e.toString());
+        } catch (DAOException e) {
+            response = new APIGetFolderMembersResponse(null, false, 500,
+                    e.toString());
         }
-
         response = new APIGetFolderMembersResponse(members, true, 0, "");
 
         return response;
@@ -774,8 +805,10 @@ public class SQLAPIHandler extends Handler implements APIHandler {
             ItemMetadata item) {
 
         // Check the owner
+        DAOPersistenceContext persistenceContext;
         try {
-            user = userDao.findById(user.getId());
+            persistenceContext = startConnection();
+            user = userDao.findById(user.getId(), persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             return new APIGetWorkspaceInfoResponse(null, false, 404,
@@ -784,7 +817,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         // Get user workspaces
         try {
-            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId());
+            List<Workspace> workspaces = workspaceDAO.getByUserId(user.getId(), persistenceContext);
             user.setWorkspaces(workspaces);
         } catch (DAOException e) {
             logger.error(e);
@@ -798,14 +831,14 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         if (item.getId() == null) {
             try {
                 workspace = workspaceDAO.getDefaultWorkspaceByUserId(user
-                        .getId());
+                        .getId(), persistenceContext);
             } catch (DAOException e) {
                 return new APIGetWorkspaceInfoResponse(null, false, 404,
                         "Workspace not found");
             }
         } else {
             try {
-                workspace = workspaceDAO.getByItemId(item.getId());
+                workspace = workspaceDAO.getByItemId(item.getId(), persistenceContext);
             } catch (DAOException e) {
                 return new APIGetWorkspaceInfoResponse(null,false, 404,
                         "Workspace not found");
@@ -827,7 +860,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         
         User workspaceOwner;
         try {
-        	workspaceOwner = userDao.findById(workspace.getOwner().getId());
+        	workspaceOwner = userDao.findById(workspace.getOwner().getId(), persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             return new APIGetWorkspaceInfoResponse(null, false, 404,
@@ -908,7 +941,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
     }
 
     private void createChunks(List<String> chunksString,
-            ItemVersion objectVersion) throws IllegalArgumentException,
+            ItemVersion objectVersion, DAOPersistenceContext persistenceContext) throws IllegalArgumentException,
             DAOException {
 
         if (chunksString.size() > 0) {
@@ -920,7 +953,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                 i++;
             }
 
-            itemVersionDao.insertChunks(chunks, objectVersion.getId());
+            itemVersionDao.insertChunks(chunks, objectVersion.getId(), persistenceContext);
         }
     }
 

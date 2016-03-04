@@ -9,8 +9,10 @@ import com.stacksync.commons.omq.ISyncService;
 import com.stacksync.syncservice.db.ConnectionPool;
 import com.stacksync.syncservice.db.ConnectionPoolFactory;
 import com.stacksync.syncservice.db.DAOFactory;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.db.WorkspaceDAO;
 import com.stacksync.syncservice.test.benchmark.Constants;
+import com.stacksync.syncservice.test.benchmark.db.DatabaseHelper;
 import com.stacksync.syncservice.test.benchmark.normal.CommonFunctions;
 import com.stacksync.syncservice.util.Config;
 
@@ -30,9 +32,13 @@ public class TestCommit {
 		CommonFunctions.generateObjects(1, Constants.DEVICE_ID);
 
 		DAOFactory factory = new DAOFactory(datasource);
-		WorkspaceDAO workspaceDao = factory.getWorkspaceDao(pool.getConnection());
-
-		Workspace workspace = workspaceDao.getById(Constants.WORKSPACE_ID);
+		WorkspaceDAO workspaceDao = factory.getWorkspaceDao();
+                
+                DatabaseHelper db = new DatabaseHelper(pool);
+                
+                DAOPersistenceContext persistenceContext = db.startConnection();
+                
+		Workspace workspace = workspaceDao.getById(Constants.WORKSPACE_ID, persistenceContext);
 
 		long startTotal = System.currentTimeMillis();
 		// server.commit(Constants.USER, Constants.REQUESTID, rWorkspace,

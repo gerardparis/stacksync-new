@@ -22,14 +22,17 @@ import com.stacksync.commons.models.ItemMetadata;
 import com.stacksync.commons.models.ItemVersion;
 import com.stacksync.commons.models.User;
 import com.stacksync.commons.models.Workspace;
+import com.stacksync.syncservice.db.ConnectionPool;
 import com.stacksync.syncservice.db.ConnectionPoolFactory;
 import com.stacksync.syncservice.db.DAOFactory;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.db.ItemDAO;
 import com.stacksync.syncservice.db.ItemVersionDAO;
 import com.stacksync.syncservice.db.UserDAO;
 import com.stacksync.syncservice.db.WorkspaceDAO;
 import com.stacksync.syncservice.exceptions.dao.DAOConfigurationException;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
+import com.stacksync.syncservice.test.benchmark.db.DatabaseHelper;
 import com.stacksync.syncservice.util.Config;
 
 public class PostgresqlDAOTest {
@@ -40,9 +43,11 @@ public class PostgresqlDAOTest {
 	private static ItemDAO objectDao;
 	private static ItemVersionDAO oversionDao;
 	private static SecureRandom random = new SecureRandom();
-
+        private static DatabaseHelper db;
+        private static DAOPersistenceContext persistenceContext;
+        
 	@BeforeClass
-	public static void testSetup() throws IOException, SQLException, DAOConfigurationException {
+	public static void testSetup() throws IOException, SQLException, DAOConfigurationException, Exception {
 
 		URL configFileResource = PostgresqlDAOTest.class.getResource("/com/ast/processserver/resources/log4j.xml");
 		DOMConfigurator.configure(configFileResource);
@@ -51,11 +56,14 @@ public class PostgresqlDAOTest {
 
 		String dataSource = "postgresql";
 		DAOFactory factory = new DAOFactory(dataSource);
-		connection = ConnectionPoolFactory.getConnectionPool(dataSource).getConnection();
-		workspaceDAO = factory.getWorkspaceDao(connection);
-		userDao = factory.getUserDao(connection);
-		objectDao = factory.getItemDAO(connection);
-		oversionDao = factory.getItemVersionDAO(connection);
+		ConnectionPool pool = ConnectionPoolFactory.getConnectionPool(dataSource);
+		workspaceDAO = factory.getWorkspaceDao();
+		userDao = factory.getUserDao();
+		objectDao = factory.getItemDAO();
+		oversionDao = factory.getItemVersionDAO();
+                
+                db = new DatabaseHelper(pool);
+                        
 	}
 
 	protected String nextString() {
@@ -72,7 +80,11 @@ public class PostgresqlDAOTest {
 		user.setQuotaUsedLogical(1403L);
 		user.setQuotaUsedReal(1024L);
 
-		userDao.add(user);
+                persistenceContext = db.beginTransaction();
+                
+		userDao.add(user, persistenceContext);
+                
+                db.commitTransaction(persistenceContext);
 
 		if (user.getId() == null) {
 			assertTrue("Could not retrieve the User ID", false);
@@ -85,6 +97,9 @@ public class PostgresqlDAOTest {
 	@Test
 	public void testCreateNewUserSameId() throws IllegalArgumentException, DAOException {
 
+
+                persistenceContext = db.beginTransaction();
+                        
 		UUID userId = UUID.randomUUID();
 
 		User user = new User();
@@ -94,8 +109,10 @@ public class PostgresqlDAOTest {
 		user.setQuotaLimit(2048L);
 		user.setQuotaUsedLogical(1403L);
 		user.setQuotaUsedReal(1024L);
-		userDao.add(user);
+		userDao.add(user, persistenceContext);
 
+                db.commitTransaction(persistenceContext);
+                
 		if (user.getId() == null) {
 			assertTrue("Could not retrieve the User ID", false);
 		} else {
@@ -108,7 +125,9 @@ public class PostgresqlDAOTest {
 			user2.setQuotaUsedReal(1024L);
 
 			try {
-				userDao.add(user2);
+                                persistenceContext = db.beginTransaction();
+                                    userDao.add(user2, persistenceContext);
+                                db.commitTransaction(persistenceContext);
 				assertTrue("User should not have been created", false);
 			} catch (DAOException e) {
 				assertTrue(e.toString(), true);
@@ -127,7 +146,9 @@ public class PostgresqlDAOTest {
 		user.setQuotaUsedLogical(1403L);
 		user.setQuotaUsedReal(1024L);
 
-		userDao.add(user);
+                persistenceContext = db.beginTransaction();
+		userDao.add(user, persistenceContext);
+                db.commitTransaction(persistenceContext);
 
 		if (user.getId() == null) {
 			assertTrue("Could not retrieve the User ID", false);
@@ -148,9 +169,11 @@ public class PostgresqlDAOTest {
 			user.setQuotaUsedReal(1024L);
 
 			try {
-				userDao.add(user);
-
-				User user2 = userDao.findById(id);
+                                persistenceContext = db.beginTransaction();
+				userDao.add(user, persistenceContext);
+                                db.commitTransaction(persistenceContext);
+                                
+				User user2 = userDao.findById(id, persistenceContext);
 				assertEquals(user, user2);
 
 			} catch (DAOException e) {
@@ -162,8 +185,9 @@ public class PostgresqlDAOTest {
 	@Test
 	public void testGetNonExistingUserById() {
 		try {
-			User user = userDao.findById(UUID.randomUUID());
-
+                    
+                        persistenceContext = db.startConnection();
+			User user = userDao.findById(UUID.randomUUID(), persistenceContext);
 			if (user == null) {
 				assertTrue(true);
 			} else {
@@ -185,15 +209,18 @@ public class PostgresqlDAOTest {
 		user.setQuotaLimit(2048L);
 		user.setQuotaUsedLogical(1403L);
 		user.setQuotaUsedReal(1024L);
-
-		userDao.add(user);
+                
+                persistenceContext = db.beginTransaction();
+                    userDao.add(user, persistenceContext);
+                db.commitTransaction(persistenceContext);
 
 		if (user.getId() == null) {
 			assertTrue("Could not retrieve the User ID", false);
 		} else {
 
 			try {
-				User user2 = userDao.findById(user.getId());
+                                db.startConnection();
+				User user2 = userDao.findById(user.getId(), persistenceContext);
 
 				if (user2 == null) {
 					assertTrue("User should exist", false);
@@ -220,7 +247,9 @@ public class PostgresqlDAOTest {
 		workspace.setOwner(user);
 
 		try {
-			workspaceDAO.add(workspace);
+                    persistenceContext = db.beginTransaction();
+			workspaceDAO.add(workspace, persistenceContext);
+                       db.commitTransaction(persistenceContext);
 			assertTrue("User should not have been created", false);
 		} catch (DAOException e) {
 			assertTrue(e.toString(), true);
@@ -230,6 +259,8 @@ public class PostgresqlDAOTest {
 	@Test
 	public void testCreateNewWorkspaceValidOwner() throws IllegalArgumentException, DAOException {
 
+            
+                persistenceContext = db.beginTransaction();
 		User user = new User();
 		user.setName(nextString());
 		user.setId(UUID.randomUUID());
@@ -237,14 +268,15 @@ public class PostgresqlDAOTest {
 		user.setQuotaLimit(2048L);
 		user.setQuotaUsedLogical(1403L);
 		user.setQuotaUsedReal(1024L);
-		userDao.add(user);
+		userDao.add(user, persistenceContext);
 
 		Workspace workspace = new Workspace();
 		workspace.setLatestRevision(0);
 		workspace.setOwner(user);
 
 		try {
-			workspaceDAO.add(workspace);
+			workspaceDAO.add(workspace, persistenceContext);
+                        db.commitTransaction(persistenceContext);
 			assertTrue(true);
 		} catch (DAOException e) {
 			assertTrue(e.toString(), false);
@@ -254,6 +286,7 @@ public class PostgresqlDAOTest {
 	@Test
 	public void testCreateObjectInvalidWorkspace() throws IllegalArgumentException, DAOException {
 
+                persistenceContext = db.beginTransaction();
 		User user = new User();
 		user.setName(nextString());
 		user.setId(UUID.randomUUID());
@@ -261,7 +294,7 @@ public class PostgresqlDAOTest {
 		user.setQuotaLimit(2048L);
 		user.setQuotaUsedLogical(1403L);
 		user.setQuotaUsedReal(1024L);
-		userDao.add(user);
+		userDao.add(user, persistenceContext);
 
 		Workspace workspace = new Workspace();
 		workspace.setOwner(user);
@@ -278,7 +311,8 @@ public class PostgresqlDAOTest {
 		object.setClientParentFileVersion(1L);
 
 		try {
-			objectDao.put(object);
+			objectDao.put(object, persistenceContext);
+                        db.commitTransaction(persistenceContext);
 			assertTrue("Object should not have been created", false);
 		} catch (DAOException e) {
 			assertTrue(e.toString(), true);
@@ -291,7 +325,8 @@ public class PostgresqlDAOTest {
 	public void testGetObjectByClientFileIdAndWorkspace() throws DAOException {
 
 		long fileId = 4852407995043916970L;
-		objectDao.findById(fileId);
+                persistenceContext =  db.startConnection();
+		objectDao.findById(fileId, persistenceContext);
 
 		// TODO Check if the returned obj is correct
 	}
@@ -304,7 +339,8 @@ public class PostgresqlDAOTest {
 	@Test
 	public void testGetObjectMetadataByWorkspaceName() throws DAOException {
 
-		List<ItemMetadata> objects = objectDao.getItemsByWorkspaceId(UUID.randomUUID());
+                persistenceContext = db.startConnection();
+		List<ItemMetadata> objects = objectDao.getItemsByWorkspaceId(UUID.randomUUID(), persistenceContext);
 
 		if (objects != null && !objects.isEmpty()) {
 
@@ -327,7 +363,8 @@ public class PostgresqlDAOTest {
 		Long version = 1L;
 		boolean list = true;
 
-		ItemMetadata object = objectDao.findById(fileId, list, version, includeDeleted, includeChunks);
+                persistenceContext = db.startConnection();
+		ItemMetadata object = objectDao.findById(fileId, list, version, includeDeleted, includeChunks, persistenceContext);
 
 		if (object != null) {
 			System.out.println(object.toString());
@@ -352,7 +389,8 @@ public class PostgresqlDAOTest {
 		Long version = 1L;
 		boolean list = true;
 
-		ItemMetadata object = objectDao.findById(fileId, list, version, includeDeleted, includeChunks);
+                persistenceContext = db.startConnection();
+		ItemMetadata object = objectDao.findById(fileId, list, version, includeDeleted, includeChunks, persistenceContext);
 
 		if (object != null) {
 			System.out.println(object.toString());
@@ -374,7 +412,8 @@ public class PostgresqlDAOTest {
 		UUID userId = UUID.randomUUID();
 		boolean includeDeleted = false;
 
-		ItemMetadata object = objectDao.findByUserId(userId, includeDeleted);
+                persistenceContext = db.startConnection();
+		ItemMetadata object = objectDao.findByUserId(userId, includeDeleted, persistenceContext);
 
 		if (object != null) {
 			System.out.println(object.toString());

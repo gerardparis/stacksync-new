@@ -9,17 +9,17 @@ import com.stacksync.syncservice.exceptions.dao.DAOException;
 
 public interface ItemVersionDAO {
 
-	public ItemMetadata findByItemIdAndVersion(Long id, Long version) throws DAOException;;
+	public ItemMetadata findByItemIdAndVersion(Long id, Long version, DAOPersistenceContext persistenceContext) throws DAOException;;
 
-	public void add(ItemVersion itemVersion) throws DAOException;
+	public void add(ItemVersion itemVersion, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void insertChunk(Long itemVersionId, Long chunkId, Integer order) throws DAOException;
+	public void insertChunk(Long itemVersionId, Long chunkId, Integer order, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void insertChunks(List<Chunk> chunks, long itemVersionId) throws DAOException;
+	public void insertChunks(List<Chunk> chunks, long itemVersionId, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public List<Chunk> findChunks(Long itemVersionId) throws DAOException;
+	public List<Chunk> findChunks(Long itemVersionId, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void update(ItemVersion itemVersion) throws DAOException;
+	public void update(ItemVersion itemVersion, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void delete(ItemVersion itemVersion) throws DAOException;
+	public void delete(ItemVersion itemVersion, DAOPersistenceContext persistenceContext) throws DAOException;
 }

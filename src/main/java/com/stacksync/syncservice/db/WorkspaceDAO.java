@@ -10,24 +10,24 @@ import com.stacksync.syncservice.exceptions.dao.DAOException;
 
 public interface WorkspaceDAO {
 
-	public Workspace getById(UUID id) throws DAOException;
+	public Workspace getById(UUID id, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public List<Workspace> getByUserId(UUID userId) throws DAOException;
+	public List<Workspace> getByUserId(UUID userId, DAOPersistenceContext persistenceContext) throws DAOException;
 	
-	public Workspace getDefaultWorkspaceByUserId(UUID userId) throws DAOException;
+	public Workspace getDefaultWorkspaceByUserId(UUID userId, DAOPersistenceContext persistenceContext) throws DAOException;
 	
-	public Workspace getByItemId(Long itemId) throws DAOException;
+	public Workspace getByItemId(Long itemId, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void add(Workspace workspace) throws DAOException;
+	public void add(Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void update(User user, Workspace workspace) throws DAOException;
+	public void update(User user, Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void addUser(User user, Workspace workspace) throws DAOException;
+	public void addUser(User user, Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException;
 	
-	public void deleteUser(User user, Workspace workspace) throws DAOException;
+	public void deleteUser(User user, Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void delete(UUID id) throws DAOException;
+	public void delete(UUID id, DAOPersistenceContext persistenceContext) throws DAOException;
 	
-	public List<UserWorkspace> getMembersById(UUID workspaceId) throws DAOException;
+	public List<UserWorkspace> getMembersById(UUID workspaceId, DAOPersistenceContext persistenceContext) throws DAOException;
 
 }

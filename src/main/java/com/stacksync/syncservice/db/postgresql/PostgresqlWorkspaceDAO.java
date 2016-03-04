@@ -15,6 +15,7 @@ import com.stacksync.commons.models.UserWorkspace;
 import com.stacksync.commons.models.Workspace;
 import com.stacksync.syncservice.db.DAOError;
 import com.stacksync.syncservice.db.DAOUtil;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.db.WorkspaceDAO;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.exceptions.dao.NoResultReturnedDAOException;
@@ -23,19 +24,19 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 
 	private static final Logger logger = Logger.getLogger(PostgresqlWorkspaceDAO.class.getName());
 
-	public PostgresqlWorkspaceDAO(Connection connection) {
-		super(connection);
+	public PostgresqlWorkspaceDAO() {
+		super();
 	}
 
 	@Override
-	public Workspace getById(UUID workspaceID) throws DAOException {
+	public Workspace getById(UUID workspaceID, DAOPersistenceContext persistenceContext) throws DAOException {
 		ResultSet resultSet = null;
 		Workspace workspace = null;
 
 		String query = "SELECT * FROM workspace w INNER JOIN workspace_user wu ON wu.workspace_id = w.id WHERE w.id = ?::uuid";
 
 		try {
-			resultSet = executeQuery(query, new Object[] { workspaceID });
+			resultSet = executeQuery(query, new Object[] { workspaceID }, persistenceContext);
 
 			if (resultSet.next()) {
 				workspace = mapWorkspace(resultSet);
@@ -49,7 +50,7 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 	}
 
 	@Override
-	public List<Workspace> getByUserId(UUID userId) throws DAOException {
+	public List<Workspace> getByUserId(UUID userId, DAOPersistenceContext persistenceContext) throws DAOException {
 
 		Object[] values = { userId };
 
@@ -61,7 +62,7 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 		List<Workspace> workspaces = new ArrayList<Workspace>();
 
 		try {
-			result = executeQuery(query, values);
+			result = executeQuery(query, values, persistenceContext);
 
 			while (result.next()) {
 				Workspace workspace = mapWorkspace(result);
@@ -81,7 +82,7 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 	}
 	
 	@Override
-	public Workspace getDefaultWorkspaceByUserId(UUID userId) throws DAOException {
+	public Workspace getDefaultWorkspaceByUserId(UUID userId, DAOPersistenceContext persistenceContext) throws DAOException {
 
 		Object[] values = { userId };
 
@@ -93,7 +94,7 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 		Workspace workspace;
 
 		try {
-			result = executeQuery(query, values);
+			result = executeQuery(query, values, persistenceContext);
 
 			if (result.next()) {
 				workspace = mapWorkspace(result);
@@ -110,7 +111,7 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 	}
 
 	@Override
-	public void add(Workspace workspace) throws DAOException {
+	public void add(Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException {
 		if (!workspace.isValid()) {
 			throw new IllegalArgumentException("Workspace attributes not set");
 		}
@@ -120,7 +121,7 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 
 		String query = "INSERT INTO workspace (latest_revision, owner_id, is_shared, is_encrypted, swift_container, swift_url) VALUES (?, ?, ?, ?, ?, ?)";
 
-		UUID id = (UUID)executeUpdate(query, values);
+		UUID id = (UUID)executeUpdate(query, values, persistenceContext);
 
 		if (id != null) {
 			workspace.setId(id);
@@ -129,7 +130,7 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 	}
 
 	@Override
-	public void update(User user, Workspace workspace) throws DAOException {
+	public void update(User user, Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException {
 		if (workspace.getId() == null || user.getId() == null) {
 			throw new IllegalArgumentException("Attributes not set");
 		}
@@ -144,16 +145,16 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 		String query = "UPDATE workspace_user " + " SET workspace_name = ?, parent_item_id = ?, modified_at = now() "
 				+ " WHERE workspace_id = ?::uuid AND user_id = ?::uuid";
 
-		executeUpdate(query, values);
+		executeUpdate(query, values, persistenceContext);
 	}
 
 	@Override
-	public void delete(UUID workspaceID) throws DAOException {
+	public void delete(UUID workspaceID, DAOPersistenceContext persistenceContext) throws DAOException {
 		Object[] values = { workspaceID };
 
 		String query = "DELETE FROM workspace WHERE id = ?::uuid";
 
-		executeUpdate(query, values);
+		executeUpdate(query, values, persistenceContext);
 	}
 
 	private Workspace mapWorkspace(ResultSet result) throws SQLException {
@@ -184,7 +185,7 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 	}
 
 	@Override
-	public void addUser(User user, Workspace workspace) throws DAOException {
+	public void addUser(User user, Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException {
 		if (user == null || !user.isValid()) {
 			throw new IllegalArgumentException("User not valid");
 		} else if (workspace == null || !workspace.isValid()) {
@@ -200,11 +201,11 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 
 		String query = "INSERT INTO workspace_user (workspace_id, user_id, workspace_name, parent_item_id) VALUES (?::uuid, ?::uuid, ?, ?)";
 
-		executeUpdate(query, values);
+		executeUpdate(query, values, persistenceContext);
 	}
 	
 	@Override
-	public void deleteUser(User user, Workspace workspace) throws DAOException {
+	public void deleteUser(User user, Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException {
 		
 		if (user == null || !user.isValid()) {
 			throw new IllegalArgumentException("User not valid");
@@ -216,11 +217,11 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 
 		String query = "DELETE FROM workspace_user WHERE workspace_id=?::uuid AND user_id=?::uuid";
 
-		executeUpdate(query, values);
+		executeUpdate(query, values, persistenceContext);
 	}
 
 	@Override
-	public Workspace getByItemId(Long itemId) throws DAOException {
+	public Workspace getByItemId(Long itemId, DAOPersistenceContext persistenceContext) throws DAOException {
 		ResultSet resultSet = null;
 		Workspace workspace = null;
 
@@ -230,7 +231,7 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 				" WHERE i.id = ?";
 
 		try {
-			resultSet = executeQuery(query, new Object[] { itemId });
+			resultSet = executeQuery(query, new Object[] { itemId }, persistenceContext);
 
 			if (resultSet.next()) {
 				workspace = mapWorkspace(resultSet);
@@ -244,7 +245,7 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 	}
 	
 	@Override
-	public List<UserWorkspace> getMembersById(UUID workspaceId) throws DAOException {
+	public List<UserWorkspace> getMembersById(UUID workspaceId, DAOPersistenceContext persistenceContext) throws DAOException {
 		ResultSet resultSet = null;
 		List<UserWorkspace> users = new ArrayList<UserWorkspace>();
 
@@ -256,7 +257,7 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 			" WHERE w.id = ?::uuid";
 
 		try {
-			resultSet = executeQuery(query, new Object[] { workspaceId });
+			resultSet = executeQuery(query, new Object[] { workspaceId }, persistenceContext);
 
 			while (resultSet.next()) {
 				UserWorkspace userWorkspace = DAOUtil.getUserWorkspaceFromResultSet(resultSet);

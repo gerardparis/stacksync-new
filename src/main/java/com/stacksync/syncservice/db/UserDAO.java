@@ -8,19 +8,19 @@ import com.stacksync.syncservice.exceptions.dao.DAOException;
 
 public interface UserDAO {
 
-	public User findById(UUID id) throws DAOException;
+	public User findById(UUID id, DAOPersistenceContext persistenceContext) throws DAOException;
 	
-	public User getByEmail(String email) throws DAOException;
+	public User getByEmail(String email, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public List<User> findAll() throws DAOException;
+	public List<User> findAll(DAOPersistenceContext persistenceContext) throws DAOException;
 	
-	public List<User> findByItemId(Long clientFileId) throws DAOException;
+	public List<User> findByItemId(Long clientFileId, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void add(User user) throws DAOException;
+	public void add(User user, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void update(User user) throws DAOException;
+	public void update(User user, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void delete(UUID id) throws DAOException;
+	public void delete(UUID id, DAOPersistenceContext persistenceContext) throws DAOException;
 	
-	public void updateAvailableQuota(User user) throws DAOException;
+	public void updateAvailableQuota(User user, DAOPersistenceContext persistenceContext) throws DAOException;
 }

@@ -8,27 +8,27 @@ import com.stacksync.commons.models.ItemMetadata;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 
 public interface ItemDAO {
-	public Item findById(Long id) throws DAOException;
+	public Item findById(Long id, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void add(Item item) throws DAOException;
+	public void add(Item item, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void update(Item item) throws DAOException;
+	public void update(Item item, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void put(Item item) throws DAOException;
+	public void put(Item item, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public void delete(Long id) throws DAOException;
+	public void delete(Long id,DAOPersistenceContext persistenceContext) throws DAOException;
 
 	// ItemMetadata information
-	public List<ItemMetadata> getItemsByWorkspaceId(UUID workspaceId) throws DAOException;
+	public List<ItemMetadata> getItemsByWorkspaceId(UUID workspaceId, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public List<ItemMetadata> getItemsById(Long id) throws DAOException;
+	public List<ItemMetadata> getItemsById(Long id, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public ItemMetadata findById(Long id, Boolean includeList, Long version, Boolean includeDeleted, Boolean includeChunks) throws DAOException;
+	public ItemMetadata findById(Long id, Boolean includeList, Long version, Boolean includeDeleted, Boolean includeChunks, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public ItemMetadata findByUserId(UUID serverUserId, Boolean includeDeleted) throws DAOException;
+	public ItemMetadata findByUserId(UUID serverUserId, Boolean includeDeleted, DAOPersistenceContext persistenceContext) throws DAOException;
 
-	public ItemMetadata findItemVersionsById(Long id) throws DAOException;
+	public ItemMetadata findItemVersionsById(Long id, DAOPersistenceContext persistenceContext) throws DAOException;
 	
-	public List<String> migrateItem(Long itemId, UUID workspaceId) throws DAOException;
+	public List<String> migrateItem(Long itemId, UUID workspaceId, DAOPersistenceContext persistenceContext) throws DAOException;
 
 }

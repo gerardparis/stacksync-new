@@ -15,11 +15,13 @@ import com.stacksync.commons.models.Workspace;
 import com.stacksync.syncservice.db.ConnectionPool;
 import com.stacksync.syncservice.db.ConnectionPoolFactory;
 import com.stacksync.syncservice.db.DAOFactory;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.db.UserDAO;
 import com.stacksync.syncservice.db.WorkspaceDAO;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.handler.Handler;
 import com.stacksync.syncservice.handler.SQLSyncHandler;
+import com.stacksync.syncservice.test.benchmark.db.DatabaseHelper;
 import com.stacksync.syncservice.util.Config;
 
 public class UpdateDeviceTest {
@@ -44,20 +46,27 @@ public class UpdateDeviceTest {
 
 			Connection connection = pool.getConnection();
 
-			workspaceDAO = factory.getWorkspaceDao(connection);
-			userDao = factory.getUserDao(connection);
+			workspaceDAO = factory.getWorkspaceDao();
+			userDao = factory.getUserDao();
 
 			user1 = new User(UUID.randomUUID(), "tester1", "tester1", "AUTH_12312312", "a@a.a", 100L, 0L, 0L);
-
-			userDao.add(user1);
+                        
+                        DatabaseHelper db = new DatabaseHelper(pool);
+                        
+                        DAOPersistenceContext persistenceContext = db.beginTransaction();
+                        
+			userDao.add(user1,persistenceContext);
 			Workspace workspace1 = new Workspace(null, 1, user1, false, false);
-			workspaceDAO.add(workspace1);
+			workspaceDAO.add(workspace1,persistenceContext);
 
 			user2 = new User(UUID.randomUUID(), "tester1", "tester1", "AUTH_12312312", "a@a.a", 100L, 0L, 0L);
 
-			userDao.add(user2);
+			userDao.add(user2,persistenceContext);
 			Workspace workspace2 = new Workspace(null, 1, user2, false, false);
-			workspaceDAO.add(workspace2);
+			workspaceDAO.add(workspace2,persistenceContext);
+                        
+                        db.commitTransaction(persistenceContext);
+                        
 
 
 	}

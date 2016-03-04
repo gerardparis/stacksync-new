@@ -26,6 +26,7 @@ import com.stacksync.syncservice.db.DAOFactory;
 import com.stacksync.syncservice.db.DeviceDAO;
 import com.stacksync.syncservice.db.ItemDAO;
 import com.stacksync.syncservice.db.ItemVersionDAO;
+import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.db.UserDAO;
 import com.stacksync.syncservice.db.WorkspaceDAO;
 import com.stacksync.syncservice.exceptions.CommitExistantVersion;
@@ -39,11 +40,12 @@ import com.stacksync.syncservice.storage.StorageFactory;
 import com.stacksync.syncservice.storage.StorageManager;
 import com.stacksync.syncservice.storage.StorageManager.StorageType;
 import com.stacksync.syncservice.util.Config;
+import java.util.logging.Level;
 
 public class Handler {
 
     private static final Logger logger = Logger.getLogger(Handler.class.getName());
-    protected Connection connection;
+    private transient ConnectionPool pool;
     protected WorkspaceDAO workspaceDAO;
     protected UserDAO userDao;
     protected DeviceDAO deviceDao;
@@ -57,17 +59,16 @@ public class Handler {
     };
 
     public Handler(ConnectionPool pool) throws SQLException, NoStorageManagerAvailable {
-        connection = pool.getConnection();
-
         String dataSource = Config.getDatasource();
 
         DAOFactory factory = new DAOFactory(dataSource);
 
-        workspaceDAO = factory.getWorkspaceDao(connection);
-        deviceDao = factory.getDeviceDAO(connection);
-        userDao = factory.getUserDao(connection);
-        itemDao = factory.getItemDAO(connection);
-        itemVersionDao = factory.getItemVersionDAO(connection);
+        workspaceDAO = factory.getWorkspaceDao();
+        deviceDao = factory.getDeviceDAO();
+        userDao = factory.getUserDao();
+        itemDao = factory.getItemDAO();
+        itemVersionDao = factory.getItemVersionDAO();
+        this.pool = pool;
         StorageType type;
         if (Config.getSwiftKeystoneProtocol().equals("http")) {
             type = StorageType.SWIFT;
@@ -79,82 +80,88 @@ public class Handler {
 
     public CommitNotification doCommit(User user, Workspace workspace, Device device, List<ItemMetadata> items)
             throws DAOException {
-
-        HashMap<Long, Long> tempIds = new HashMap<Long, Long>();
-
-        workspace = workspaceDAO.getById(workspace.getId());
-        // TODO: check if the workspace belongs to the user or its been given
-        // access
-
-        device = deviceDao.get(device.getId());
-        // TODO: check if the device belongs to the user
-
-        user = userDao.findById(user.getId());
-
+        
+        DAOPersistenceContext persistenceContext = beginTransaction();
+        
         List<CommitInfo> responseObjects = new ArrayList<CommitInfo>();
 
-        for (ItemMetadata item : items) {
+            HashMap<Long, Long> tempIds = new HashMap<Long, Long>();
 
-            ItemMetadata objectResponse = null;
-            boolean committed;
+            workspace = workspaceDAO.getById(workspace.getId(), persistenceContext);
+        // TODO: check if the workspace belongs to the user or its been given
+            // access
 
-            try {
-                if (item.getParentId() != null) {
-                    Long parentId = tempIds.get(item.getParentId());
-                    if (parentId != null) {
-                        item.setParentId(parentId);
+            device = deviceDao.get(device.getId(), persistenceContext);
+            // TODO: check if the device belongs to the user
+
+            user = userDao.findById(user.getId(), persistenceContext);
+
+            for (ItemMetadata item : items) {
+
+                ItemMetadata objectResponse = null;
+                boolean committed;
+
+                try {
+                    if (item.getParentId() != null) {
+                        Long parentId = tempIds.get(item.getParentId());
+                        if (parentId != null) {
+                            item.setParentId(parentId);
+                        }
                     }
-                }
 
                 // if the item does not have ID but has a TempID, maybe it was
-                // set
-                if (item.getId() == null && item.getTempId() != null) {
-                    Long newId = tempIds.get(item.getTempId());
-                    if (newId != null) {
-                        item.setId(newId);
+                    // set
+                    if (item.getId() == null && item.getTempId() != null) {
+                        Long newId = tempIds.get(item.getTempId());
+                        if (newId != null) {
+                            item.setId(newId);
+                        }
                     }
-                }
-                if (workspace.isShared()) {
-                    User owner = userDao.findById(workspace.getOwner().getId());
-                    this.commitObject(owner, item, workspace, device);
-                } else {
-                    this.commitObject(user, item, workspace, device);
+                    if (workspace.isShared()) {
+                        User owner = userDao.findById(workspace.getOwner().getId(), persistenceContext);
+                        this.commitObject(owner, item, workspace, device, persistenceContext);
+                    } else {
+                        this.commitObject(user, item, workspace, device, persistenceContext);
 
+                    }
+
+                    if (item.getTempId() != null) {
+                        tempIds.put(item.getTempId(), item.getId());
+                    }
+
+                    objectResponse = item;
+                    committed = true;
+                } catch (CommitWrongVersion e) {
+                    logger.info("Commit wrong version item:" + e.getItem().getId());
+                    Item serverObject = e.getItem();
+                    objectResponse = this.getCurrentServerVersion(serverObject,persistenceContext);
+                    commitTransaction(persistenceContext);
+                    committed = false;
+                } catch (CommitExistantVersion e) {
+                    logger.info("Commit existant version item:" + e.getItem().getId());
+                    Item serverObject = e.getItem();
+                    objectResponse = this.getCurrentServerVersion(serverObject,persistenceContext);
+                    committed = true;
+                } catch (DAOException e) {
+                    logger.info("Owner of shared workspace not found:" + e);
+                    committed = false;
                 }
 
-                if (item.getTempId() != null) {
-                    tempIds.put(item.getTempId(), item.getId());
-                }
-
-                objectResponse = item;
-                committed = true;
-            } catch (CommitWrongVersion e) {
-                logger.info("Commit wrong version item:" + e.getItem().getId());
-                Item serverObject = e.getItem();
-                objectResponse = this.getCurrentServerVersion(serverObject);
-                committed = false;
-            } catch (CommitExistantVersion e) {
-                logger.info("Commit existant version item:" + e.getItem().getId());
-                Item serverObject = e.getItem();
-                objectResponse = this.getCurrentServerVersion(serverObject);
-                committed = true;
-            } catch (DAOException e) {
-                logger.info("Owner of shared workspace not found:" + e);
-                committed = false;
+                responseObjects.add(new CommitInfo(item.getVersion(), committed, objectResponse));
             }
-
-            responseObjects.add(new CommitInfo(item.getVersion(), committed, objectResponse));
-        }
-
+         
+        commitTransaction(persistenceContext);             
+        
         return new CommitNotification(null, responseObjects, user.getQuotaLimit(), user.getQuotaUsedLogical());
     }
 
     public Workspace doShareFolder(User user, List<String> emails, Item item, boolean isEncrypted)
-            throws ShareProposalNotCreatedException, UserNotFoundException {
+            throws ShareProposalNotCreatedException, UserNotFoundException, DAOException {
 
+        DAOPersistenceContext persistenceContext = beginTransaction();
         // Check the owner
         try {
-            user = userDao.findById(user.getId());
+            user = userDao.findById(user.getId(),persistenceContext);
         } catch (NoResultReturnedDAOException e) {
             logger.warn(e);
             throw new UserNotFoundException(e);
@@ -165,7 +172,7 @@ public class Handler {
 
         // Get folder metadata
         try {
-            item = itemDao.findById(item.getId());
+            item = itemDao.findById(item.getId(),persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             throw new ShareProposalNotCreatedException(e);
@@ -178,7 +185,7 @@ public class Handler {
         // Get the source workspace
         Workspace sourceWorkspace;
         try {
-            sourceWorkspace = workspaceDAO.getById(item.getWorkspace().getId());
+            sourceWorkspace = workspaceDAO.getById(item.getWorkspace().getId(),persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             throw new ShareProposalNotCreatedException(e);
@@ -192,7 +199,7 @@ public class Handler {
         for (String email : emails) {
             User addressee;
             try {
-                addressee = userDao.getByEmail(email);
+                addressee = userDao.getByEmail(email,persistenceContext);
                 if (!addressee.getId().equals(user.getId())) {
                     addressees.add(addressee);
                 }
@@ -237,9 +244,9 @@ public class Handler {
 
             // Save the workspace to the DB
             try {
-                workspaceDAO.add(workspace);
+                workspaceDAO.add(workspace,persistenceContext);
                 // add the owner to the workspace
-                workspaceDAO.addUser(user, workspace);
+                workspaceDAO.addUser(user, workspace,persistenceContext);
 
             } catch (DAOException e) {
                 logger.error(e);
@@ -257,7 +264,7 @@ public class Handler {
             // Migrate files to new workspace
             List<String> chunks;
             try {
-                chunks = itemDao.migrateItem(item.getId(), workspace.getId());
+                chunks = itemDao.migrateItem(item.getId(), workspace.getId(),persistenceContext);
             } catch (Exception e) {
                 logger.error(e);
                 throw new ShareProposalNotCreatedException(e);
@@ -282,7 +289,7 @@ public class Handler {
         // Add the addressees to the workspace
         for (User addressee : addressees) {
             try {
-                workspaceDAO.addUser(addressee, workspace);
+                workspaceDAO.addUser(addressee, workspace,persistenceContext);
 
             } catch (DAOException e) {
                 workspace.getUsers().remove(addressee);
@@ -299,16 +306,19 @@ public class Handler {
             }
         }
 
+        commitTransaction(persistenceContext);
+
         return workspace;
     }
 
     public UnshareData doUnshareFolder(User user, List<String> emails, Item item, boolean isEncrypted)
-            throws ShareProposalNotCreatedException, UserNotFoundException {
+            throws ShareProposalNotCreatedException, UserNotFoundException, DAOException {
 
+        DAOPersistenceContext persistenceContext = beginTransaction();
         UnshareData response;
         // Check the owner
         try {
-            user = userDao.findById(user.getId());
+            user = userDao.findById(user.getId(),persistenceContext);
         } catch (NoResultReturnedDAOException e) {
             logger.warn(e);
             throw new UserNotFoundException(e);
@@ -319,7 +329,7 @@ public class Handler {
 
         // Get folder metadata
         try {
-            item = itemDao.findById(item.getId());
+            item = itemDao.findById(item.getId(),persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             throw new ShareProposalNotCreatedException(e);
@@ -332,7 +342,7 @@ public class Handler {
         // Get the workspace
         Workspace sourceWorkspace;
         try {
-            sourceWorkspace = workspaceDAO.getById(item.getWorkspace().getId());
+            sourceWorkspace = workspaceDAO.getById(item.getWorkspace().getId(),persistenceContext);
         } catch (DAOException e) {
             logger.error(e);
             throw new ShareProposalNotCreatedException(e);
@@ -349,7 +359,7 @@ public class Handler {
         for (String email : emails) {
             User addressee;
             try {
-                addressee = userDao.getByEmail(email);
+                addressee = userDao.getByEmail(email,persistenceContext);
                 if (addressee.getId().equals(sourceWorkspace.getOwner().getId())) {
                     logger.warn(String.format("Email '%s' corresponds with owner of the folder. ", email));
                     throw new ShareProposalNotCreatedException("Email " + email
@@ -399,7 +409,7 @@ public class Handler {
             Workspace defaultWorkspace;
             try {
                 // Always the last member of a shared folder should be the owner
-                defaultWorkspace = workspaceDAO.getDefaultWorkspaceByUserId(sourceWorkspace.getOwner().getId());
+                defaultWorkspace = workspaceDAO.getDefaultWorkspaceByUserId(sourceWorkspace.getOwner().getId(),persistenceContext);
             } catch (DAOException e) {
                 logger.error(e);
                 throw new ShareProposalNotCreatedException("Could not get default workspace");
@@ -408,7 +418,7 @@ public class Handler {
             // Migrate files to new workspace
             List<String> chunks;
             try {
-                chunks = itemDao.migrateItem(item.getId(), defaultWorkspace.getId());
+                chunks = itemDao.migrateItem(item.getId(), defaultWorkspace.getId(),persistenceContext);
             } catch (Exception e) {
                 logger.error(e);
                 throw new ShareProposalNotCreatedException(e);
@@ -431,7 +441,7 @@ public class Handler {
 
             // delete workspace
             try {
-                workspaceDAO.delete(sourceWorkspace.getId());
+                workspaceDAO.delete(sourceWorkspace.getId(),persistenceContext);
             } catch (DAOException e) {
                 logger.error(e);
                 throw new ShareProposalNotCreatedException(e);
@@ -452,7 +462,7 @@ public class Handler {
             for (User userToRemove : usersToRemove) {
 
                 try {
-                    workspaceDAO.deleteUser(userToRemove, sourceWorkspace);
+                    workspaceDAO.deleteUser(userToRemove, sourceWorkspace,persistenceContext);
                 } catch (DAOException e) {
                     logger.error(e);
                     throw new ShareProposalNotCreatedException(e);
@@ -468,16 +478,20 @@ public class Handler {
             response = new UnshareData(usersToRemove, sourceWorkspace, false);
 
         }
+        
+        commitTransaction(persistenceContext);
+        
         return response;
     }
 
-    public List<UserWorkspace> doGetWorkspaceMembers(User user, Workspace workspace) throws InternalServerError {
+    public List<UserWorkspace> doGetWorkspaceMembers(User user, Workspace workspace) throws InternalServerError, DAOException {
 
+        DAOPersistenceContext persistenceContext = startConnection();
+        
         // TODO: check user permissions.
-
         List<UserWorkspace> members;
         try {
-            members = workspaceDAO.getMembersById(workspace.getId());
+            members = workspaceDAO.getMembersById(workspace.getId(),persistenceContext);
 
         } catch (DAOException e) {
             logger.error(e);
@@ -491,27 +505,23 @@ public class Handler {
         return members;
     }
 
-    public Connection getConnection() {
-        return this.connection;
-    }
-
     /*
      * Private functions
      */
-    private void commitObject(User user, ItemMetadata item, Workspace workspace, Device device)
+    private void commitObject(User user, ItemMetadata item, Workspace workspace, Device device,DAOPersistenceContext persistenceContext)
             throws CommitWrongVersion, CommitExistantVersion, DAOException {
 
-        Item serverItem = itemDao.findById(item.getId());
+        Item serverItem = itemDao.findById(item.getId(),persistenceContext);
 
         // Check if this object already exists in the server.
         if (serverItem == null) {
             if (item.getVersion().equals(1L)) {
                 long newQuotaUsedLogical = item.getSize() + user.getQuotaUsedLogical();
-                this.saveNewObject(item, workspace, device);
+                this.saveNewObject(item, workspace, device, persistenceContext);
 
                 // Update quota used
                 user.setQuotaUsedLogical(newQuotaUsedLogical);
-                userDao.updateAvailableQuota(user);
+                userDao.updateAvailableQuota(user, persistenceContext);
             } else {
                 throw new CommitWrongVersion("Invalid version " + item.getVersion() + ". Expected version 1.");
             }
@@ -524,12 +534,12 @@ public class Handler {
         boolean existVersionInServer = (serverVersion >= clientVersion);
 
         if (existVersionInServer) {
-            this.saveExistentVersion(serverItem, item);
+            this.saveExistentVersion(serverItem, item, persistenceContext);
         } else {
             // Check if version is correct
             if (serverVersion + 1 == clientVersion) {
                 ItemMetadata serverItemMetadata = itemDao.findById(item.getId(), false, serverItem.getLatestVersion(),
-                        false, false);
+                        false, false, persistenceContext);
                 if (item.getStatus().equals(Status.DELETED.toString())) {
                     item.setSize(0L);
                 }
@@ -539,78 +549,66 @@ public class Handler {
                     newQuotaUsedLogical = 0L;
                 }
 
-                this.saveNewVersion(item, serverItem, workspace, device);
+                this.saveNewVersion(item, serverItem, workspace, device, persistenceContext);
                 logger.debug("New Quota:" + newQuotaUsedLogical);
                 user.setQuotaUsedLogical(newQuotaUsedLogical);
-                userDao.updateAvailableQuota(user);
+                userDao.updateAvailableQuota(user, persistenceContext);
             } else {
                 throw new CommitWrongVersion("Invalid version.", serverItem);
             }
         }
     }
 
-    private void saveNewObject(ItemMetadata metadata, Workspace workspace, Device device) throws DAOException {
+    private void saveNewObject(ItemMetadata metadata, Workspace workspace, Device device, DAOPersistenceContext persistenceContext) throws DAOException {
         // Create workspace and parent instances
         Long parentId = metadata.getParentId();
         Item parent = null;
         if (parentId != null) {
-            parent = itemDao.findById(parentId);
+            parent = itemDao.findById(parentId, persistenceContext);
         }
 
-        beginTransaction();
+        // Insert object to DB
+        Item item = new Item();
+        item.setId(metadata.getId());
+        item.setFilename(metadata.getFilename());
+        item.setMimetype(metadata.getMimetype());
+        item.setIsFolder(metadata.isFolder());
+        item.setClientParentFileVersion(metadata.getParentVersion());
 
-        try {
-            // Insert object to DB
+        item.setLatestVersion(metadata.getVersion());
+        item.setWorkspace(workspace);
+        item.setParent(parent);
 
-            Item item = new Item();
-            item.setId(metadata.getId());
-            item.setFilename(metadata.getFilename());
-            item.setMimetype(metadata.getMimetype());
-            item.setIsFolder(metadata.isFolder());
-            item.setClientParentFileVersion(metadata.getParentVersion());
+        itemDao.put(item, persistenceContext);
 
-            item.setLatestVersion(metadata.getVersion());
-            item.setWorkspace(workspace);
-            item.setParent(parent);
+        // set the global ID
+        metadata.setId(item.getId());
 
-            itemDao.put(item);
+        // Insert objectVersion
+        ItemVersion objectVersion = new ItemVersion();
+        objectVersion.setVersion(metadata.getVersion());
+        objectVersion.setModifiedAt(metadata.getModifiedAt());
+        objectVersion.setChecksum(metadata.getChecksum());
+        objectVersion.setStatus(metadata.getStatus());
+        objectVersion.setSize(metadata.getSize());
 
-            // set the global ID
-            metadata.setId(item.getId());
+        objectVersion.setItem(item);
+        objectVersion.setDevice(device);
+        itemVersionDao.add(objectVersion, persistenceContext);
 
-            // Insert objectVersion
-            ItemVersion objectVersion = new ItemVersion();
-            objectVersion.setVersion(metadata.getVersion());
-            objectVersion.setModifiedAt(metadata.getModifiedAt());
-            objectVersion.setChecksum(metadata.getChecksum());
-            objectVersion.setStatus(metadata.getStatus());
-            objectVersion.setSize(metadata.getSize());
+        // If no folder, create new chunks and update the available quota
+        if (!metadata.isFolder()) {
+            long fileSize = metadata.getSize();
 
-            objectVersion.setItem(item);
-            objectVersion.setDevice(device);
-            itemVersionDao.add(objectVersion);
-
-            // If no folder, create new chunks and update the available quota
-            if (!metadata.isFolder()) {
-                long fileSize = metadata.getSize();
-
-                List<String> chunks = metadata.getChunks();
-                this.createChunks(chunks, objectVersion);
-            }
-
-            commitTransaction();
-        } catch (Exception e) {
-            logger.error(e);
-            rollbackTransaction();
+            List<String> chunks = metadata.getChunks();
+            this.createChunks(chunks, objectVersion, persistenceContext);
         }
+
     }
 
-    private void saveNewVersion(ItemMetadata metadata, Item serverItem, Workspace workspace, Device device)
+    private void saveNewVersion(ItemMetadata metadata, Item serverItem, Workspace workspace, Device device, DAOPersistenceContext persistenceContext)
             throws DAOException {
 
-        beginTransaction();
-
-        try {
             // Create new objectVersion
             ItemVersion itemVersion = new ItemVersion();
             itemVersion.setVersion(metadata.getVersion());
@@ -622,12 +620,12 @@ public class Handler {
             itemVersion.setItem(serverItem);
             itemVersion.setDevice(device);
 
-            itemVersionDao.add(itemVersion);
+            itemVersionDao.add(itemVersion, persistenceContext);
 
             // If no folder, create new chunks
             if (!metadata.isFolder()) {
                 List<String> chunks = metadata.getChunks();
-                this.createChunks(chunks, itemVersion);
+                this.createChunks(chunks, itemVersion, persistenceContext);
             }
 
             // TODO To Test!!
@@ -643,23 +641,18 @@ public class Handler {
                     serverItem.setParent(null);
                 } else {
                     serverItem.setClientParentFileVersion(metadata.getParentVersion());
-                    Item parent = itemDao.findById(parentFileId);
+                    Item parent = itemDao.findById(parentFileId, persistenceContext);
                     serverItem.setParent(parent);
                 }
             }
 
             // Update object latest version
             serverItem.setLatestVersion(metadata.getVersion());
-            itemDao.put(serverItem);
+            itemDao.put(serverItem, persistenceContext);
 
-            commitTransaction();
-        } catch (Exception e) {
-            logger.error(e);
-            rollbackTransaction();
-        }
     }
 
-    private void createChunks(List<String> chunksString, ItemVersion objectVersion) throws IllegalArgumentException,
+    private void createChunks(List<String> chunksString, ItemVersion objectVersion, DAOPersistenceContext persistenceContext) throws IllegalArgumentException,
             DAOException {
         if (chunksString != null) {
             if (chunksString.size() > 0) {
@@ -671,15 +664,15 @@ public class Handler {
                     i++;
                 }
 
-                itemVersionDao.insertChunks(chunks, objectVersion.getId());
+                itemVersionDao.insertChunks(chunks, objectVersion.getId(), persistenceContext);
             }
         }
     }
 
-    private void saveExistentVersion(Item serverObject, ItemMetadata clientMetadata) throws CommitWrongVersion,
+    private void saveExistentVersion(Item serverObject, ItemMetadata clientMetadata, DAOPersistenceContext persistenceContext) throws CommitWrongVersion,
             CommitExistantVersion, DAOException {
 
-        ItemMetadata serverMetadata = this.getServerObjectVersion(serverObject, clientMetadata.getVersion());
+        ItemMetadata serverMetadata = this.getServerObjectVersion(serverObject, clientMetadata.getVersion(), persistenceContext);
 
         if (!clientMetadata.equals(serverMetadata)) {
             throw new CommitWrongVersion("Invalid version.", serverObject);
@@ -692,38 +685,53 @@ public class Handler {
         }
     }
 
-    private ItemMetadata getCurrentServerVersion(Item serverObject) throws DAOException {
-        return getServerObjectVersion(serverObject, serverObject.getLatestVersion());
+    private ItemMetadata getCurrentServerVersion(Item serverObject, DAOPersistenceContext persistenceContext) throws DAOException {
+        return getServerObjectVersion(serverObject, serverObject.getLatestVersion(), persistenceContext);
     }
 
-    private ItemMetadata getServerObjectVersion(Item serverObject, long requestedVersion) throws DAOException {
+    private ItemMetadata getServerObjectVersion(Item serverObject, long requestedVersion, DAOPersistenceContext persistenceContext) throws DAOException {
 
-        ItemMetadata metadata = itemVersionDao.findByItemIdAndVersion(serverObject.getId(), requestedVersion);
+        ItemMetadata metadata = itemVersionDao.findByItemIdAndVersion(serverObject.getId(), requestedVersion, persistenceContext);
 
         return metadata;
     }
 
-    private void beginTransaction() throws DAOException {
+    protected DAOPersistenceContext beginTransaction() throws DAOException {
         try {
-            connection.setAutoCommit(false);
+
+            DAOPersistenceContext persistenceContext = new DAOPersistenceContext();
+
+            persistenceContext.beginTransaction(pool);
+
+            return persistenceContext;
+
         } catch (SQLException e) {
             throw new DAOException(e);
         }
     }
 
-    private void commitTransaction() throws DAOException {
+    protected void commitTransaction(DAOPersistenceContext persistenceContext) throws DAOException {
         try {
-            connection.commit();
-            this.connection.setAutoCommit(true);
+            persistenceContext.commitTransaction();
         } catch (SQLException e) {
+            rollbackTransaction(persistenceContext);
             throw new DAOException(e);
         }
     }
 
-    private void rollbackTransaction() throws DAOException {
+    protected void rollbackTransaction(DAOPersistenceContext persistenceContext) throws DAOException {
         try {
-            this.connection.rollback();
-            this.connection.setAutoCommit(true);
+            persistenceContext.rollBackTransaction();
+        } catch (SQLException e) {
+            throw new DAOException(e);
+        }
+    }
+    
+    protected DAOPersistenceContext startConnection() throws DAOException {
+       try {
+            DAOPersistenceContext persistenceContext = new DAOPersistenceContext();
+            persistenceContext.setConnection(pool.getConnection());
+            return persistenceContext;
         } catch (SQLException e) {
             throw new DAOException(e);
         }
