@@ -40,7 +40,9 @@ public class SQLSyncHandler extends Handler implements SyncHandler {
                         DAOPersistenceContext persistenceContext = startConnection();
 			
                         responseObjects = itemDao.getItemsByWorkspaceId(workspace.getId(), persistenceContext);
-                        
+
+                        closeConnection(persistenceContext);
+                                
 		} catch (DAOException e) {
 			logger.error(e.toString(), e);
 		}
@@ -58,6 +60,8 @@ public class SQLSyncHandler extends Handler implements SyncHandler {
                         DAOPersistenceContext persistenceContext = startConnection();
                         
 			workspaces = workspaceDAO.getByUserId(user.getId(),persistenceContext);
+                        
+                        closeConnection(persistenceContext);
                         
 		} catch (NoResultReturnedDAOException e) {
 			logger.error(e);
@@ -149,6 +153,7 @@ public class SQLSyncHandler extends Handler implements SyncHandler {
 		try {
                         DAOPersistenceContext persistenceContext = startConnection();
 			User user = userDao.getByEmail(email,persistenceContext);
+                        closeConnection(persistenceContext);
 			return user;
 
 		} catch (NoResultReturnedDAOException e) {

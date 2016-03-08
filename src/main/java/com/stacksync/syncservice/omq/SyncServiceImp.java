@@ -41,6 +41,7 @@ import com.stacksync.syncservice.exceptions.dao.DAOException;
 import com.stacksync.syncservice.handler.SQLSyncHandler;
 import com.stacksync.syncservice.handler.SyncHandler;
 import com.stacksync.syncservice.util.Config;
+import java.util.logging.Level;
 
 public class SyncServiceImp extends RemoteObject implements ISyncService {
 
@@ -92,9 +93,15 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 			Device device = new Device(request.getDeviceId());
 			Workspace workspace = new Workspace(request.getWorkspaceId());
 
+                        //Testing pourposes
+                        //long init = System.currentTimeMillis();
+            
 			CommitNotification result = handler.doCommit(user, workspace, device, request.getItems());
                         result.setRequestId(request.getRequestId());
                         
+                        //Testing pourposes
+                        //logger.info("RequestId= "+request.getRequestId() + " - TotalTime: "+ Long.toString(System.currentTimeMillis()-init));
+            
 			UUID id = workspace.getId();
 
 			RemoteWorkspace commitNotifier = broker.lookupMulti(id.toString(), RemoteWorkspace.class);
@@ -226,4 +233,12 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 
 		return accountInfo;
 	}
+
+        /* Testing pourposes
+        @Override
+        public void createUser(UUID id) {
+	    handler.doCreateUser(id);
+        }
+        */
+        
 }

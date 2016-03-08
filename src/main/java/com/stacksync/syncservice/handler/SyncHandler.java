@@ -39,4 +39,7 @@ public interface SyncHandler {
 
 	public User doGetUser(String email) throws UserNotFoundException;
 
+        /*Testing pourposes
+            public void doCreateUser(UUID id);
+        */
 }

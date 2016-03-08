@@ -40,6 +40,7 @@ import com.stacksync.syncservice.storage.StorageFactory;
 import com.stacksync.syncservice.storage.StorageManager;
 import com.stacksync.syncservice.storage.StorageManager.StorageType;
 import com.stacksync.syncservice.util.Config;
+import java.sql.Statement;
 import java.util.logging.Level;
 
 public class Handler {
@@ -492,12 +493,14 @@ public class Handler {
         List<UserWorkspace> members;
         try {
             members = workspaceDAO.getMembersById(workspace.getId(),persistenceContext);
-
+            
         } catch (DAOException e) {
             logger.error(e);
             throw new InternalServerError(e);
         }
 
+        closeConnection(persistenceContext);
+        
         if (members == null || members.isEmpty()) {
             throw new InternalServerError("No members found in workspace.");
         }
@@ -696,6 +699,40 @@ public class Handler {
         return metadata;
     }
 
+    public void doCreateUser(UUID id) {
+	try {
+
+	    try {
+		String[] create = new String[]{
+		    "INSERT INTO user1 (id, name, swift_user, swift_account, email, quota_limit) VALUES ('" + id + "', '" + id + "', '"
+		    + id + "', '" + id + "', '" + id + "@asdf.asdf', 0);",
+		    "INSERT INTO workspace (id, latest_revision, owner_id, is_shared, swift_container, swift_url) VALUES ('" + id
+		    + "', 0, '" + id + "', false, '" + id + "', 'STORAGEURL');",
+		    "INSERT INTO workspace_user(workspace_id, user_id, workspace_name, parent_item_id) VALUES ('" + id + "', '" + id
+		    + "', 'default', NULL);",
+		    "INSERT INTO device (id, name, user_id, os, app_version) VALUES ('" + id + "', '" + id + "', '" + id + "', 'LINUX', 1)"};
+
+		Statement statement;
+
+                Connection connection = startConnection().getConnection();
+                
+		statement = connection.createStatement();
+
+		for (String query : create) {
+		    statement.executeUpdate(query);
+		}
+
+		statement.close();
+                
+                connection.close();
+	    } catch (SQLException e) {
+		logger.error(e);
+	    }
+	} catch (Exception e) {
+	    logger.error(e);
+	}
+    }
+    
     protected DAOPersistenceContext beginTransaction() throws DAOException {
         try {
 
@@ -732,6 +769,14 @@ public class Handler {
             DAOPersistenceContext persistenceContext = new DAOPersistenceContext();
             persistenceContext.setConnection(pool.getConnection());
             return persistenceContext;
+        } catch (SQLException e) {
+            throw new DAOException(e);
+        }
+    }
+    
+    protected void closeConnection(DAOPersistenceContext persistenceContext) throws DAOException {
+       try {
+            persistenceContext.closeConnection();
         } catch (SQLException e) {
             throw new DAOException(e);
         }

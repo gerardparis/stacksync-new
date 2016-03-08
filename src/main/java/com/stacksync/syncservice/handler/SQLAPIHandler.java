@@ -36,6 +36,7 @@ import com.stacksync.syncservice.rpc.messages.APIRestoreMetadata;
 import com.stacksync.syncservice.rpc.messages.APIShareFolderResponse;
 import com.stacksync.syncservice.rpc.messages.APIUnshareFolderResponse;
 import com.stacksync.syncservice.util.Constants;
+import java.util.logging.Level;
 
 public class SQLAPIHandler extends Handler implements APIHandler {
 
@@ -84,6 +85,8 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                 throw new DAOException(DAOError.FILE_NOT_FOUND);
             }
 
+            closeConnection(persistenceContext);
+            
             success = true;
             
         } catch (DAOException e) {
@@ -129,6 +132,8 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                 responseObject = this.itemDao.findById(folderId, true, null,
                         includeDeleted, false, persistenceContext);
             }
+            
+            closeConnection(persistenceContext);
             
             success = true;
 
@@ -228,6 +233,12 @@ public class SQLAPIHandler extends Handler implements APIHandler {
             return new APICommitResponse(fileToSave, false, 400,
                     "This name is already used in the same folder. Please use a different one. ");
         }
+        
+        try{
+            closeConnection(persistenceContext);
+        } catch (DAOException ex) {
+            logger.error(ex);
+        }
 
         APICommitResponse responseAPI;
 
@@ -241,7 +252,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
             responseAPI = new APICommitResponse(fileToSave, false, 500,
                     e.toString());
         }
-
+ 
         return responseAPI;
     }
 
@@ -312,6 +323,12 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         Workspace workspace = new Workspace(file.getWorkspaceId());
 
+        try{
+          closeConnection(persistenceContext);  
+        } catch (DAOException ex) {
+            logger.error(ex);
+        } 
+        
         APICommitResponse responseAPI;
         try {
             CommitNotification commitResult = this.doCommit(user, workspace, apiDevice, items);
@@ -434,6 +451,12 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
         Workspace workspace = new Workspace(file.getWorkspaceId());
         
+        try{
+            closeConnection(persistenceContext);
+        } catch (DAOException ex) {
+            logger.error(ex);
+        }
+        
         APICommitResponse responseAPI;
         try {
             CommitNotification commitResult = this.doCommit(user, workspace, apiDevice, items);
@@ -503,6 +526,13 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                 break;
             }
         }
+        
+        try{
+            closeConnection(persistenceContext);
+        } catch (DAOException ex) {
+            logger.error(ex);
+        }
+                
 
         if (object != null) {
             APICreateFolderResponse response = new APICreateFolderResponse(
@@ -647,6 +677,12 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         Workspace workspace = new Workspace(filesToDelete.get(0)
                 .getWorkspaceId());
 
+        try{
+            closeConnection(persistenceContext);
+        } catch (DAOException ex) {
+            logger.error(ex);
+        }
+                
         APIDeleteResponse response;
         try {
             response = deleteItemsAPI(user, workspace, filesToDelete);
@@ -695,6 +731,12 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         if (serverItem.isFolder()) {
             return new APIGetVersions(null, false, 400,
                     "Incorrect file type. Must be a file, not a folder.");
+        }
+        
+        try{
+            closeConnection(persistenceContext);
+        } catch (DAOException ex) {
+            logger.error(ex);
         }
 
         APIGetVersions response = new APIGetVersions(serverItem, true, 0, "");
@@ -785,6 +827,12 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                     "No folder found with the given ID.");
         }
 
+        try{
+            closeConnection(persistenceContext);
+        } catch (DAOException ex) {
+            logger.error(ex);
+        }
+                
         List<UserWorkspace> members = null;
         try {
             members = this.doGetWorkspaceMembers(user, item.getWorkspace());
@@ -866,6 +914,13 @@ public class SQLAPIHandler extends Handler implements APIHandler {
             return new APIGetWorkspaceInfoResponse(null, false, 404,
                     "User not found.");
         }
+        
+        try{
+            closeConnection(persistenceContext);
+        } catch (DAOException ex) {
+            logger.error(ex);
+        }
+                
         workspace.setOwner(workspaceOwner);
         APIGetWorkspaceInfoResponse response = new APIGetWorkspaceInfoResponse(
                 workspace,  true, 0, "");

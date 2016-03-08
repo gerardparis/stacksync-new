@@ -24,17 +24,23 @@ public class DAOPersistenceContext {
     public void commitTransaction() throws SQLException{
         connection.commit();
         connection.setAutoCommit(true);
+        connection.close();
     }
     
     public void rollBackTransaction() throws SQLException{
         connection.rollback();
         connection.setAutoCommit(true);
+        connection.close();
     }
 
     public Connection getConnection() {
         return connection;
     }
 
+    public void closeConnection() throws SQLException {
+        connection.close();
+    }
+        
     public void setConnection(Connection connection) {
         this.connection = connection;
     }
