@@ -14,7 +14,7 @@ public interface UserDAO {
 
 	public List<User> findAll(DAOPersistenceContext persistenceContext) throws DAOException;
 	
-	public List<User> findByItemId(Long clientFileId, DAOPersistenceContext persistenceContext) throws DAOException;
+	public List<User> findByItemId(UUID clientFileId, DAOPersistenceContext persistenceContext) throws DAOException;
 
 	public void add(User user, DAOPersistenceContext persistenceContext) throws DAOException;
 

@@ -7,45 +7,76 @@ package com.stacksync.syncservice.db;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.NotSupportedException;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import javax.transaction.TransactionManager;
 
 /**
  *
  * @author marcruiz
  */
 public class DAOPersistenceContext {
-    
-    Connection connection;
 
-    public void beginTransaction(ConnectionPool pool) throws SQLException{
+    Connection connection;
+    EntityManager em;
+    TransactionManager tm;
+
+    public void beginTransaction(ConnectionPool pool) throws SQLException {
         connection = pool.getConnection();
         connection.setAutoCommit(false);
     }
-    
-    public void commitTransaction() throws SQLException{
-        connection.commit();
-        connection.setAutoCommit(true);
-        connection.close();
+
+    public void beginTransaction(EntityManagerFactory pool) throws SQLException, NotSupportedException, SystemException {
+        tm = com.arjuna.ats.jta.TransactionManager.transactionManager();
+        tm.begin();
+        em = pool.createEntityManager();
     }
-    
-    public void rollBackTransaction() throws SQLException{
-        connection.rollback();
-        connection.setAutoCommit(true);
-        connection.close();
+
+    public void commitTransaction() throws SQLException, RollbackException, HeuristicMixedException, HeuristicRollbackException, SecurityException, IllegalStateException, SystemException {
+        if (connection != null) {
+            connection.commit();
+            connection.setAutoCommit(true);
+            connection.close();
+        } else if (tm != null) {
+            tm.commit();
+        }
+    }
+
+    public void rollBackTransaction() throws SQLException, IllegalStateException, SecurityException, SystemException {
+        if (connection != null) {
+            connection.rollback();
+            connection.setAutoCommit(true);
+            connection.close();
+        } else if (tm != null) {
+            tm.rollback();
+        }
     }
 
     public Connection getConnection() {
         return connection;
     }
-
-    public void closeConnection() throws SQLException {
-        connection.close();
-    }
-        
+    
     public void setConnection(Connection connection) {
         this.connection = connection;
     }
     
+    public void closeConnection() throws SQLException {
+        connection.close();
+    }
+    public EntityManager getEntityManager() {
+        return em;
+    }
+
+    public void setEntityManager(EntityManager em) {
+        this.em = em;
+    }
     
-    
-    
+    public void closeEntityManager() throws SQLException {
+        em.close();
+    }
 }

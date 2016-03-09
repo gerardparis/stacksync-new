@@ -260,7 +260,7 @@ public final class DAOUtil {
 	public static ItemMetadata getItemMetadataFromResultSet(ResultSet result)
 			throws SQLException {
 
-		ItemMetadata metadata = new ItemMetadata();
+		/*ItemMetadata metadata = new ItemMetadata();
 		metadata.setId(getLongFromResultSet(result, "item_id"));
 		metadata.setParentId(getLongFromResultSet(result, "parent_id"));
 		metadata.setParentVersion((getLongFromResultSet(result, "client_parent_file_version")));
@@ -282,7 +282,8 @@ public final class DAOUtil {
 			metadata.setChunks(chunksList);
 		}
 
-		return metadata;
+		return metadata;*/
+            return null;
 	}
 	
 	public static UserWorkspace getUserWorkspaceFromResultSet(ResultSet result)
@@ -315,7 +316,7 @@ public final class DAOUtil {
 	
 	public static Item getItemFromResultSet(ResultSet result) throws SQLException {
 
-		Item item = new Item();
+		/*Item item = new Item();
 		item.setId(result.getLong("id"));
 		item.setLatestVersion(result.getLong("latest_version"));
 		item.setFilename(result.getString("filename"));
@@ -331,7 +332,8 @@ public final class DAOUtil {
 		parent.setId(result.getLong("parent_id"));
 		item.setParent(parent);
 
-		return item;
+		return item;*/
+            return null;
 	}
 	
 }

@@ -62,13 +62,13 @@ public class UpdateMetadataTest {
 	@Test
 	public void registerNewDevice() throws Exception {
 		
-		ItemMetadata file = new ItemMetadata();
+		/*ItemMetadata file = new ItemMetadata();
 		file.setId(118L);
 		file.setFilename("chunks-2.png");
 		file.setParentId(null);
 		
 		APICommitResponse response = handler.updateMetadata(user1, file, false);
-		System.out.println(response.toString());
+		System.out.println(response.toString());*/
 	}
 
 }

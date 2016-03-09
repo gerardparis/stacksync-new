@@ -16,7 +16,7 @@ public interface WorkspaceDAO {
 	
 	public Workspace getDefaultWorkspaceByUserId(UUID userId, DAOPersistenceContext persistenceContext) throws DAOException;
 	
-	public Workspace getByItemId(Long itemId, DAOPersistenceContext persistenceContext) throws DAOException;
+	public Workspace getByItemId(UUID itemId, DAOPersistenceContext persistenceContext) throws DAOException;
 
 	public void add(Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException;
 

@@ -152,7 +152,7 @@ public class PostgresqlUserDAO extends PostgresqlDAO implements UserDAO {
 	}
 
 	@Override
-	public List<User> findByItemId(Long itemId, DAOPersistenceContext persistenceContext) throws DAOException {
+	public List<User> findByItemId(UUID itemId, DAOPersistenceContext persistenceContext) throws DAOException {
 		ArrayList<User> users = new ArrayList<User>();
 		Object[] values = { itemId };
 

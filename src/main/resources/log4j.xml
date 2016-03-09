@@ -42,10 +42,29 @@
         </layout>        
     </appender>
 
+    <!--<appender name="FILE" class="org.apache.log4j.FileAppender">
+        <param name="file" value="stacksync-server.log"/>
+        <param name="immediateFlush" value="true"/>
+        <param name="threshold" value="debug"/>
+        <param name="append" value="false"/>
+
+        <layout class="org.apache.log4j.PatternLayout">
+            <param value="%d{[yyyy-MM-dd HH:mm:ss,SSS]} %p %t %c{1}.%M:%L - %m%n" name="ConversionPattern"/>
+        </layout>     
+    </appender>-->
+    
+    <appender name="file" class="org.apache.log4j.FileAppender">
+        <param name="file" value="./stacksync-server.log" />
+        <param name="append" value="false" />
+        <param name="threshold" value="debug" />
+        <layout class="org.apache.log4j.PatternLayout">
+           <param value="%d{[yyyy-MM-dd HH:mm:ss,SSS]} %p %t %c{1}.%M:%L - %m%n" name="ConversionPattern"/>
+        </layout>
+    </appender>
+        
   <root> 
     <priority value ="info" /> 
-    <appender-ref ref="stderr" />
-    <appender-ref ref="stdout" />
+    <appender-ref ref="file"/>
     <!--  <appender-ref ref="A2" /> -->  
   </root>
   

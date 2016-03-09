@@ -17,6 +17,7 @@ import org.apache.log4j.Logger;
 import com.stacksync.commons.omq.ISyncService;
 import com.stacksync.syncservice.db.ConnectionPool;
 import com.stacksync.syncservice.db.ConnectionPoolFactory;
+import com.stacksync.syncservice.db.hibernateOGM.HibernateOGMEntityManagerFactory;
 import com.stacksync.syncservice.exceptions.dao.DAOConfigurationException;
 import com.stacksync.syncservice.omq.SyncServiceImp;
 import com.stacksync.syncservice.rpc.XmlRpcSyncHandler;
@@ -26,12 +27,14 @@ import com.stacksync.syncservice.storage.StorageManager;
 import com.stacksync.syncservice.storage.StorageManager.StorageType;
 import com.stacksync.syncservice.util.Config;
 import com.stacksync.syncservice.util.Constants;
+import javax.persistence.EntityManagerFactory;
 
 public class SyncServiceDaemon implements Daemon {
 
     private static final Logger logger = Logger
             .getLogger(SyncServiceDaemon.class.getName());
     private static ConnectionPool pool = null;
+    private static EntityManagerFactory em_pool = null;
     private static XmlRpcSyncServer xmlRpcServer = null;
     private static Broker broker = null;
     private static SyncServiceImp syncService = null;
@@ -73,12 +76,18 @@ public class SyncServiceDaemon implements Daemon {
         try {
 
             String datasource = Config.getDatasource();
-            pool = ConnectionPoolFactory.getConnectionPool(datasource);
+            
+            if (datasource.equals("hibernateOGM")){
+                em_pool = HibernateOGMEntityManagerFactory.getEntityManagerFactory();
+            } else {
+                pool = ConnectionPoolFactory.getConnectionPool(datasource);
+                // it will try to connect to the DB, throws exception if not
+                // possible.
+                Connection conn = pool.getConnection();
+                conn.close();
+            }
+            
 
-            // it will try to connect to the DB, throws exception if not
-            // possible.
-            Connection conn = pool.getConnection();
-            conn.close();
 
             logger.info("Connection to database succeded");
         } catch (DAOConfigurationException e) {
@@ -91,6 +100,7 @@ public class SyncServiceDaemon implements Daemon {
 
         logger.info("Connecting to OpenStack Swift...");
 
+        /* Commented for testing pourposes
         try {
             StorageType type;
             if (Config.getSwiftKeystoneProtocol().equals("http")) {
@@ -104,13 +114,17 @@ public class SyncServiceDaemon implements Daemon {
         } catch (Exception e) {
             logger.fatal("Could not connect to Swift.", e);
             System.exit(7);
-        }
+        }*/
 
 
         logger.info("Initializing the messaging middleware...");
         try {
             broker = new Broker(Config.getProperties());
-            syncService = new SyncServiceImp(broker, pool);
+            if(em_pool!=null){
+               syncService = new SyncServiceImp(broker, em_pool); 
+            } else {
+               syncService = new SyncServiceImp(broker, pool);
+            }
             logger.info("Messaging middleware initialization succeeded");
         } catch (Exception e) {
             logger.error("Could not initialize ObjectMQ.", e);
@@ -129,6 +143,7 @@ public class SyncServiceDaemon implements Daemon {
             System.exit(5);
         }
 
+        /* Commented for testing pourposes
         logger.info("Initializing XML RPC...");
         try {
             launchXmlRpc();
@@ -136,7 +151,7 @@ public class SyncServiceDaemon implements Daemon {
         } catch (Exception e) {
             logger.fatal("Could not initialize XMLRPC.", e);
             System.exit(6);
-        }
+        }*/
     }
 
     @Override

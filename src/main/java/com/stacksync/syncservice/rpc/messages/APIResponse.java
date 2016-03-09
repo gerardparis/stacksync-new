@@ -77,7 +77,7 @@ public abstract class APIResponse {
             jMetadata.addProperty("parent_file_id", "");
 
         } else {
-            jMetadata.addProperty("parent_file_id", metadata.getParentId());
+            jMetadata.addProperty("parent_file_id", metadata.getParentId().toString());
         }
 
         if (metadata.getParentId() == null) {
@@ -125,8 +125,8 @@ public abstract class APIResponse {
             return jMetadata;
         }
 
-        jMetadata.addProperty("id", metadata.getId());
-        jMetadata.addProperty("parent_id", metadata.getParentId());
+        jMetadata.addProperty("id", metadata.getId().toString());
+        jMetadata.addProperty("parent_id", metadata.getParentId().toString());
         jMetadata.addProperty("filename", metadata.getFilename());
         jMetadata.addProperty("is_folder", metadata.isFolder());
         jMetadata.addProperty("status", metadata.getStatus());

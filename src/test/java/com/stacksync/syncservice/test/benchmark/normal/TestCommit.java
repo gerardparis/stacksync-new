@@ -21,7 +21,7 @@ import com.stacksync.syncservice.util.Config;
 public class TestCommit {
 
 	public static List<ItemMetadata> getObjectMetadata(JsonArray allFiles) {
-		List<ItemMetadata> metadataList = new ArrayList<ItemMetadata>();
+		/*List<ItemMetadata> metadataList = new ArrayList<ItemMetadata>();
 
 		for (int i = 0; i < allFiles.size(); i++) {
 			JsonObject file = allFiles.get(i).getAsJsonObject();
@@ -67,7 +67,8 @@ public class TestCommit {
 			metadataList.add(object);
 		}
 
-		return metadataList;
+		return metadataList;*/
+            return null;
 	}
 
 	public static void main(String[] args) throws Exception {

@@ -120,8 +120,8 @@ public class JSONParser implements IParser {
 			return jMetadata;
 		}
 
-		jMetadata.addProperty("id", metadata.getId());
-		jMetadata.addProperty("parent_id", metadata.getParentId());
+		jMetadata.addProperty("id", metadata.getId().toString());
+		jMetadata.addProperty("parent_id", metadata.getParentId().toString());
 		jMetadata.addProperty("filename", metadata.getFilename());
 		jMetadata.addProperty("is_folder", metadata.isFolder());
 		jMetadata.addProperty("status", metadata.getStatus());

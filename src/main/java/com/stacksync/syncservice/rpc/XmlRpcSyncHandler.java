@@ -60,7 +60,7 @@ public class XmlRpcSyncHandler {
     public String getMetadata(String strUserId, String strItemId, String strIncludeChunks, String strVersion,
             String strIsFolder) {
 
-        logger.debug(String.format("XMLRPC Request. getMetadata [userId: %s, fileId: %s, chunks: %s, version: %s]",
+        /*logger.debug(String.format("XMLRPC Request. getMetadata [userId: %s, fileId: %s, chunks: %s, version: %s]",
                 strUserId, strItemId, strIncludeChunks, strVersion));
 
         Long fileId = null;
@@ -86,12 +86,13 @@ public class XmlRpcSyncHandler {
 
         logger.debug(String.format("XMLRPC Response. %s", response.toString()));
 
-        return response.toString();
+        return response.toString();*/
+        return null;
     }
 
     public String getFolderContents(String strUserId, String strFolderId, String strIncludeDeleted) {
 
-        Boolean includeList = true;
+        /*Boolean includeList = true;
 
         logger.debug(String.format("XMLRPC Request. getMetadata [userId: %s, fileId: %s, includeList: %s]", strUserId,
                 strFolderId, includeList, strIncludeDeleted));
@@ -111,12 +112,13 @@ public class XmlRpcSyncHandler {
 
         logger.debug(String.format("XMLRPC Response. %s", response.toString()));
 
-        return response.toString();
+        return response.toString();*/
+        return null;
     }
 
     public String getVersions(String strUserId, String strFileId) {
 
-        Long itemId = null;
+        /*Long itemId = null;
         try {
             itemId = Long.parseLong(strFileId);
         } catch (NumberFormatException ex) {
@@ -134,12 +136,13 @@ public class XmlRpcSyncHandler {
         APIGetVersions response = this.apiHandler.getVersions(user, item);
 
         logger.debug("XMLRPC -> resp -->[" + response.toString() + "]");
-        return response.toString();
+        return response.toString();*/
+        return null;
     }
 
     public String newFolder(String strUserId, String strFolderName, String strParentId) {
 
-        logger.debug(String.format("XMLRPC Request. createFolder [userId: %s, folderName: %s, parentId: %s]",
+        /*logger.debug(String.format("XMLRPC Request. createFolder [userId: %s, folderName: %s, parentId: %s]",
                 strUserId, strFolderName, strParentId));
 
         Long parentId = null;
@@ -172,13 +175,14 @@ public class XmlRpcSyncHandler {
 
         logger.debug("XMLRPC -> resp -->[" + response.toString() + "]");
 
-        return response.toString();
+        return response.toString();*/
+        return null;
     }
 
     public String newFile(String strUserId, String strFileName, String strParentId, String strChecksum,
             String strFileSize, String strMimetype, List<String> chunks) {
 
-        Long parentId = null;
+        /*Long parentId = null;
         try {
             parentId = Long.parseLong(strParentId);
         } catch (NumberFormatException ex) {
@@ -238,12 +242,14 @@ public class XmlRpcSyncHandler {
 
         logger.debug("XMLRPC -> resp -->[" + strResponse + "]");
         return strResponse;
+                */
+        return null;
     }
 
     public String updateData(String strUserId, String strFileId, String strChecksum, String strFileSize,
             String strMimetype, List<String> chunks) {
 
-        logger.debug("XMLRPC -> update data -->[User:" + strUserId + ", Checksum: " + strChecksum + ", Filesize: "
+        /*logger.debug("XMLRPC -> update data -->[User:" + strUserId + ", Checksum: " + strChecksum + ", Filesize: "
                 + strFileSize + ", Mimetype: " + strMimetype + ", Chunks: " + chunks + "]");
 
         Long fileId = null;
@@ -287,11 +293,13 @@ public class XmlRpcSyncHandler {
 
         logger.debug("XMLRPC -> resp -->[" + strResponse + "]");
         return strResponse;
+                */
+        return null;
 
     }
 
     public String updateMetadata(String strUserId, String strFileId, String strNewFileName, String strNewParentId, String strNameUpdated, String strParentUpdated) {
-
+        /*
         logger.debug("XMLRPC -> put_metadata_file -->[User:" + strUserId + ", FileName:" + strNewFileName
                 + ", parentId: " + strNewParentId + "]");
 
@@ -335,10 +343,12 @@ public class XmlRpcSyncHandler {
 
         logger.debug("XMLRPC -> resp -->[" + strResponse + "]");
         return strResponse;
+                */
+        return null;
     }
 
     public String deleteItem(String strUserId, String strFileId, String strIsFolder) {
-        Long fileId = null;
+        /*Long fileId = null;
         try {
             fileId = Long.parseLong(strFileId);
         } catch (NumberFormatException ex) {
@@ -362,12 +372,13 @@ public class XmlRpcSyncHandler {
         }
 
         logger.debug("XMLRPC -> resp -->[" + response.toString() + "]");
-        return response.toString();
+        return response.toString();*/
+        return null;
     }
 
     // necessary?
     public String restoreMetadata(UUID userId, String strRequestId, String strFileId, String strVersion) {
-        Long fileId = null;
+        /*Long fileId = null;
         try {
             fileId = Long.parseLong(strFileId);
         } catch (NumberFormatException ex) {
@@ -399,12 +410,13 @@ public class XmlRpcSyncHandler {
         }
 
         logger.debug("XMLRPC -> resp -->[" + strResponse + "]");
-        return strResponse;
+        return strResponse;*/
+        return null;
     }
 
     public String shareFolder(String strUserId, String strFolderId, List<String> emails) {
 
-        logger.debug("XMLRPC -> share_folder -->[User:" + strUserId + ", Folder ID:" + strFolderId + ", Emails: "
+        /*logger.debug("XMLRPC -> share_folder -->[User:" + strUserId + ", Folder ID:" + strFolderId + ", Emails: "
                 + emails.toString() + "]");
 
         Long folderId = null;
@@ -431,13 +443,14 @@ public class XmlRpcSyncHandler {
         String strResponse = response.toString();
 
         logger.debug("XMLRPC -> resp -->[" + strResponse + "]");
-        return strResponse;
+        return strResponse;*/
+        return null;
 
     }
 
     public String unshareFolder(String strUserId, String strFolderId, List<String> emails) {
 
-        logger.debug("XMLRPC -> unshare_folder --> [User:" + strUserId + ", Folder ID:" + strFolderId
+        /*logger.debug("XMLRPC -> unshare_folder --> [User:" + strUserId + ", Folder ID:" + strFolderId
                 + ", Emails: " + emails.toString() + "]");
 
         Long folderId = null;
@@ -465,13 +478,14 @@ public class XmlRpcSyncHandler {
         String strResponse = response.toString();
 
         logger.debug("XMLRPC -> resp -->[" + strResponse + "]");
-        return strResponse;
+        return strResponse;*/
+        return null;
 
     }
 
     public String getFolderMembers(String strUserId, String strFolderId) {
 
-        logger.debug("XMLRPC -> get_folder_members -->[User:" + strUserId + ", Folder ID:" + strFolderId + "]");
+        /*logger.debug("XMLRPC -> get_folder_members -->[User:" + strUserId + ", Folder ID:" + strFolderId + "]");
 
         Long folderId = null;
         try {
@@ -492,13 +506,14 @@ public class XmlRpcSyncHandler {
         String strResponse = response.toString();
 
         logger.debug("XMLRPC -> resp -->[" + strResponse + "]");
-        return strResponse;
+        return strResponse;*/
+        return null;
 
     }
 
     public String getWorkspaceInfo(String strUserId, String strFileId) {
 
-        logger.debug("XMLRPC -> get workspace info -->[User:" + strUserId + ", File ID: " + strFileId + "]");
+        /*logger.debug("XMLRPC -> get workspace info -->[User:" + strUserId + ", File ID: " + strFileId + "]");
 
         Long fileId = null;
         try {
@@ -518,19 +533,21 @@ public class XmlRpcSyncHandler {
         APIGetWorkspaceInfoResponse response = this.apiHandler.getWorkspaceInfo(user, item);
 
         logger.debug("XMLRPC -> resp --> [" + response.toString() + "]");
-        return response.toString();
+        return response.toString();*/
+        return null;
 
     }
 
     private APIGetMetadata getParentMetadata(UUID userId, Long parentId) {
-        Boolean includeDeleted = true;
+        /*Boolean includeDeleted = true;
 
         User user = new User();
         user.setId(userId);
 
         APIGetMetadata metadataResponse = this.apiHandler.getFolderContent(user, parentId, includeDeleted);
 
-        return metadataResponse;
+        return metadataResponse;*/
+        return null;
     }
 
     private APICommitResponse checkParentMetadata(Long parentId, APIGetMetadata metadataResponse) {
@@ -554,7 +571,7 @@ public class XmlRpcSyncHandler {
     private void bindUsersToWorkspace(Workspace workspace, Long folderId) {
 
         // Create notification
-        ShareProposalNotification notification = new ShareProposalNotification(workspace.getId(),
+        /*ShareProposalNotification notification = new ShareProposalNotification(workspace.getId(),
                 workspace.getName(), folderId, workspace.getOwner().getId(), workspace.getOwner().getName(),
                 workspace.getSwiftContainer(), workspace.getSwiftUrl(), workspace.isEncrypted());
 
@@ -577,14 +594,14 @@ public class XmlRpcSyncHandler {
             } catch (RemoteException e) {
                 logger.error(String.format("Could not notify user: '%s'", addressee.getId()), e);
             }
-        }
+        }*/
 
     }
 
     private void unBindUsersToWorkspace(Workspace workspace, List<User> usersToRemove, boolean isUnshared, Long folderId) {
 
         // Create notification
-        UnshareNotification notification = new UnshareNotification(workspace.getId(),
+        /*UnshareNotification notification = new UnshareNotification(workspace.getId(),
                 workspace.getName(), folderId, workspace.getOwner().getId(), workspace.getOwner().getName(),
                 workspace.getSwiftContainer(), workspace.getSwiftUrl(), workspace.isEncrypted());
 
@@ -609,7 +626,7 @@ public class XmlRpcSyncHandler {
             } catch (RemoteException e) {
                 logger.error(String.format("Could not notify user: '%s'", addressee.getId()), e);
             }
-        }
+        }*/
     }
 
     private void sendMessageToClients(String workspaceName, APIResponse generalResponse) {

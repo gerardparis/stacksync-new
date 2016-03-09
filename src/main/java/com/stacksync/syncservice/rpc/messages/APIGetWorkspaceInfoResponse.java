@@ -49,7 +49,7 @@ public class APIGetWorkspaceInfoResponse extends APIResponse {
 		jMetadata.addProperty("is_shared", workspace.isShared());
 		jMetadata.addProperty("owner", workspace.getOwner().getId().toString());
 		jMetadata.addProperty("latest_revision", workspace.getLatestRevision());
-		jMetadata.addProperty("parent_item_id", workspace.getParentItem().getId());
+		jMetadata.addProperty("parent_item_id", workspace.getParentItem().getId().toString());
 		jMetadata.addProperty("is_encrypted", workspace.isEncrypted());
 		jMetadata.addProperty("quota_used", workspace.getOwner().getQuotaUsedLogical().toString());
 		jMetadata.addProperty("quota_limit", workspace.getOwner().getQuotaLimit().toString());

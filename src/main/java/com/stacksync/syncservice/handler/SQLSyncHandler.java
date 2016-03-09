@@ -23,12 +23,17 @@ import com.stacksync.syncservice.exceptions.dao.NoResultReturnedDAOException;
 import com.stacksync.syncservice.exceptions.dao.NoRowsAffectedDAOException;
 import com.stacksync.syncservice.exceptions.storage.NoStorageManagerAvailable;
 import java.util.logging.Level;
+import javax.persistence.EntityManagerFactory;
 
 public class SQLSyncHandler extends Handler implements SyncHandler {
 
 	private static final Logger logger = Logger.getLogger(SQLSyncHandler.class.getName());	
 
 	public SQLSyncHandler(ConnectionPool pool) throws SQLException, NoStorageManagerAvailable {
+		super(pool);
+	}
+        
+        public SQLSyncHandler(EntityManagerFactory pool) throws SQLException, NoStorageManagerAvailable {
 		super(pool);
 	}
 

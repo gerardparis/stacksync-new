@@ -11,6 +11,7 @@ import com.stacksync.commons.models.Device;
 import com.stacksync.commons.models.Item;
 import com.stacksync.commons.models.ItemVersion;
 import com.stacksync.commons.models.Workspace;
+import java.util.UUID;
 
 /**
  * 
@@ -66,7 +67,7 @@ public class MetadataGenerator {
 		item.setWorkspace(workspace);
 		item.setLatestVersion(numVersions);
 		item.setParent(parent);
-		item.setId((long) randGenerator.nextInt()); // If nextLong
+		item.setId(UUID.randomUUID()); // If nextLong
 		// fails!
 		item.setFilename(randomString());
 		item.setMimetype("Document");

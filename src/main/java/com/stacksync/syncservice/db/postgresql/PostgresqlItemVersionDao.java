@@ -16,6 +16,7 @@ import com.stacksync.syncservice.db.DAOUtil;
 import com.stacksync.syncservice.db.ItemVersionDAO;
 import com.stacksync.syncservice.db.DAOPersistenceContext;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
+import java.util.UUID;
 
 public class PostgresqlItemVersionDao extends PostgresqlDAO implements ItemVersionDAO {
 
@@ -26,7 +27,7 @@ public class PostgresqlItemVersionDao extends PostgresqlDAO implements ItemVersi
 	}
 
 	@Override
-	public ItemMetadata findByItemIdAndVersion(Long id, Long version, DAOPersistenceContext persistenceContext) throws DAOException {
+	public ItemMetadata findByItemIdAndVersion(UUID id, Long version, DAOPersistenceContext persistenceContext) throws DAOException {
 		Object[] values = { id, version };
 
 		String query = "SELECT i.id AS item_id, i.parent_id, i.client_parent_file_version, i.filename, i.is_folder, i.mimetype, i.workspace_id, "
@@ -61,7 +62,7 @@ public class PostgresqlItemVersionDao extends PostgresqlDAO implements ItemVersi
 
 	@Override
 	public void add(ItemVersion itemVersion, DAOPersistenceContext persistenceContext) throws DAOException {
-		if (!itemVersion.isValid()) {
+		/*if (!itemVersion.isValid()) {
 			throw new IllegalArgumentException("Item version attributes not set");
 		}
 
@@ -76,7 +77,7 @@ public class PostgresqlItemVersionDao extends PostgresqlDAO implements ItemVersi
 
 		if (id != null) {
 			itemVersion.setId(id);
-		}
+		}*/
 
 	}
 
@@ -93,7 +94,7 @@ public class PostgresqlItemVersionDao extends PostgresqlDAO implements ItemVersi
 	}
 
 	@Override
-	public void insertChunk(Long itemVersionId, Long chunkId, Integer order, DAOPersistenceContext persistenceContext) throws DAOException {
+	public void insertChunk(ItemVersion itemVersionId, UUID chunkId, Integer order, DAOPersistenceContext persistenceContext) throws DAOException {
 		Object[] values = { itemVersionId, chunkId, order };
 
 		String query = "INSERT INTO item_version_chunk( item_version_id, chunk_id, chunk_order ) "
@@ -108,7 +109,7 @@ public class PostgresqlItemVersionDao extends PostgresqlDAO implements ItemVersi
 	}
 
 	@Override
-	public void insertChunks(List<Chunk> chunks, long itemVersionId, DAOPersistenceContext persistenceContext) throws DAOException {
+	public void insertChunks(List<Chunk> chunks, ItemVersion itemVersionId, DAOPersistenceContext persistenceContext) throws DAOException {
 		if (chunks.isEmpty()) {
 			throw new IllegalArgumentException("No chunks received");
 		}
@@ -140,7 +141,7 @@ public class PostgresqlItemVersionDao extends PostgresqlDAO implements ItemVersi
 	}
 
 	@Override
-	public List<Chunk> findChunks(Long itemVersionId, DAOPersistenceContext persistenceContext) throws DAOException {
+	public List<Chunk> findChunks(UUID itemVersionId, DAOPersistenceContext persistenceContext) throws DAOException {
 		Object[] values = { itemVersionId };
 
 		String query = "SELECT ivc.* " + " FROM item_version_chunk ivc " + " WHERE ivc.item_version_id=? "

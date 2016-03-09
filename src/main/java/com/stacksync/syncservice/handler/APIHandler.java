@@ -15,10 +15,11 @@ import com.stacksync.syncservice.rpc.messages.APIGetWorkspaceInfoResponse;
 import com.stacksync.syncservice.rpc.messages.APIRestoreMetadata;
 import com.stacksync.syncservice.rpc.messages.APIShareFolderResponse;
 import com.stacksync.syncservice.rpc.messages.APIUnshareFolderResponse;
+import java.util.UUID;
 
 public interface APIHandler {
 	
-	public APIGetMetadata getMetadata(User user, Long fileId, Boolean includeChunks, Long version, Boolean isFolder);
+	public APIGetMetadata getMetadata(User user, UUID fileId, Boolean includeChunks, Long version, Boolean isFolder);
 	
 	public APICommitResponse createFile(User user, ItemMetadata fileToSave);
 	

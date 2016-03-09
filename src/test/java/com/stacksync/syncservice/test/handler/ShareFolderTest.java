@@ -71,11 +71,11 @@ public class ShareFolderTest {
 	@Test
 	public void shareFolder() throws Exception {
 		
-		List<String> emails = new ArrayList<String>();
+		/*List<String> emails = new ArrayList<String>();
 		emails.add("c@c.c");
 		Item item = new Item(125L);
 		
-		handler.doShareFolder(user1, emails, item, false);
+		handler.doShareFolder(user1, emails, item, false);*/
 		
 	}
 

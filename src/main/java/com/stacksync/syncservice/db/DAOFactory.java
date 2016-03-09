@@ -1,6 +1,10 @@
 package com.stacksync.syncservice.db;
 
-import java.sql.Connection;
+import com.stacksync.syncservice.db.hibernateOGM.HibernateOGMDeviceDAO;
+import com.stacksync.syncservice.db.hibernateOGM.HibernateOGMItemDAO;
+import com.stacksync.syncservice.db.hibernateOGM.HibernateOGMItemVersionDao;
+import com.stacksync.syncservice.db.hibernateOGM.HibernateOGMUserDAO;
+import com.stacksync.syncservice.db.hibernateOGM.HibernateOGMWorkspaceDAO;
 
 import com.stacksync.syncservice.db.postgresql.PostgresqlDeviceDAO;
 import com.stacksync.syncservice.db.postgresql.PostgresqlItemDAO;
@@ -10,37 +14,59 @@ import com.stacksync.syncservice.db.postgresql.PostgresqlWorkspaceDAO;
 
 public class DAOFactory {
 
-	private String type;
+    private String type;
 
-	public DAOFactory(String type) {
-		this.type = type;
-	}
+    public DAOFactory(String type) {
+        this.type = type;
+    }
 
-	public WorkspaceDAO getWorkspaceDao() {
-		return new PostgresqlWorkspaceDAO();
-	}
+    public WorkspaceDAO getWorkspaceDao() {
+        if ("hibernateOGM".equals(type)) {
+            return new HibernateOGMWorkspaceDAO();
+        } else {
+            return new PostgresqlWorkspaceDAO();
+        }
+    }
 
-	public UserDAO getUserDao() {
-		return new PostgresqlUserDAO();
-	}
+    public UserDAO getUserDao() {
+        if ("hibernateOGM".equals(type)) {
+            return new HibernateOGMUserDAO();
+        } else {
+            return new PostgresqlUserDAO();
+        }
+    }
 
-	public ItemDAO getItemDAO() {
-		return new PostgresqlItemDAO();
-	}
+    public ItemDAO getItemDAO() {
+        if ("hibernateOGM".equals(type)) {
+            return new HibernateOGMItemDAO();
+        } else {
+            return new PostgresqlItemDAO();
+        }
+    }
 
-	public ItemVersionDAO getItemVersionDAO() {
-		return new PostgresqlItemVersionDao();
-	}
+    public ItemVersionDAO getItemVersionDAO() {
+        if ("hibernateOGM".equals(type)) {
+            return new HibernateOGMItemVersionDao();
+        } else {
+            return new PostgresqlItemVersionDao();
+        }
 
-	public DeviceDAO getDeviceDAO() {
-		return new PostgresqlDeviceDAO();
-	}
+    }
 
-	public String getType() {
-		return type;
-	}
+    public DeviceDAO getDeviceDAO() {
+        if ("hibernateOGM".equals(type)) {
+            return new HibernateOGMDeviceDAO();
+        } else {
+            return new PostgresqlDeviceDAO();
 
-	public void setType(String type) {
-		this.type = type;
-	}
+        }
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
 }

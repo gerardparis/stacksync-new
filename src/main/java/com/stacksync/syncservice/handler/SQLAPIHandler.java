@@ -36,6 +36,7 @@ import com.stacksync.syncservice.rpc.messages.APIRestoreMetadata;
 import com.stacksync.syncservice.rpc.messages.APIShareFolderResponse;
 import com.stacksync.syncservice.rpc.messages.APIUnshareFolderResponse;
 import com.stacksync.syncservice.util.Constants;
+import java.util.UUID;
 import java.util.logging.Level;
 
 public class SQLAPIHandler extends Handler implements APIHandler {
@@ -49,7 +50,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
     }
 
     @Override
-    public APIGetMetadata getMetadata(User user, Long fileId,
+    public APIGetMetadata getMetadata(User user, UUID fileId,
             Boolean includeChunks, Long version, Boolean isFolder) {
 
         ItemMetadata responseObject = null;
@@ -100,7 +101,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
         return response;
     }
 
-    public APIGetMetadata getFolderContent(User user, Long folderId,
+    public APIGetMetadata getFolderContent(User user, UUID folderId,
             Boolean includeDeleted) {
 
         ItemMetadata responseObject = null;
@@ -1008,7 +1009,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                 i++;
             }
 
-            itemVersionDao.insertChunks(chunks, objectVersion.getId(), persistenceContext);
+            itemVersionDao.insertChunks(chunks, objectVersion, persistenceContext);
         }
     }
 

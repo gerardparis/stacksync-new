@@ -69,7 +69,7 @@ public class CreateFileTest {
 	@Test
 	public void createNewFile() throws Exception {
 		
-		ItemMetadata file = new ItemMetadata();
+		/*ItemMetadata file = new ItemMetadata();
 		file.setFilename("holaad8882.txt");
 		file.setParentId(null);
 		file.setTempId(new Random().nextLong());
@@ -84,7 +84,7 @@ public class CreateFileTest {
 		file.setChunks(Arrays.asList("11111", "22222", "333333"));
 		
 		APICommitResponse response = handler.createFile(user1, file);
-		System.out.println(response.toString());
+		System.out.println(response.toString());*/
 	}
 
 }

@@ -61,7 +61,7 @@ public class UpdateDataTest {
 	@Test
 	public void registerNewDevice() throws Exception {
 		
-		ItemMetadata file = new ItemMetadata();
+		/*ItemMetadata file = new ItemMetadata();
 		file.setId(509L);
 		file.setMimetype("image/jpeg");
 		file.setChecksum(0000000000L);
@@ -69,7 +69,7 @@ public class UpdateDataTest {
 		file.setChunks(Arrays.asList("11111", "22222", "333333"));
 		
 		APICommitResponse response = handler.updateData(user1, file);
-		System.out.println(response.toString());
+		System.out.println(response.toString());*/
 	}
 
 }

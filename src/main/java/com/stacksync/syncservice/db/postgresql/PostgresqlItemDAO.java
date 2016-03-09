@@ -27,7 +27,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	}
 
 	@Override
-	public Item findById(Long item1ID, DAOPersistenceContext persistenceContext) throws DAOException {
+	public Item findById(UUID item1ID, DAOPersistenceContext persistenceContext) throws DAOException {
 		ResultSet resultSet = null;
 		Item item = null;
 
@@ -50,7 +50,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	@Override
 	public void add(Item item, DAOPersistenceContext persistenceContext) throws DAOException {
 
-		if (!item.isValid()) {
+		/*if (!item.isValid()) {
 			throw new IllegalArgumentException("Item attributes not set");
 		}
 
@@ -68,7 +68,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 
 		if (id != null) {
 			item.setId(id);
-		}
+		}*/
 
 	}
 
@@ -87,11 +87,11 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 			throw new IllegalArgumentException("Item attributes not set");
 		}
 
-		Long parentId = item.getParentId();
+		UUID parentId = item.getParentId();
 		// If id == 0 means parent is null!
-		if (parentId != null && parentId == 0) {
+		/*if (parentId != null && parentId == 0) {
 			parentId = null;
-		}
+		}*/
 
 		Object[] values = { item.getWorkspace().getId(),
 				item.getLatestVersion(), parentId, item.getFilename(),
@@ -108,7 +108,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	}
 
 	@Override
-	public void delete(Long id, DAOPersistenceContext persistenceContext) throws DAOException {
+	public void delete(UUID id, DAOPersistenceContext persistenceContext) throws DAOException {
 		// TODO Auto-generated method stub
 
 	}
@@ -169,7 +169,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	}
 
 	@Override
-	public List<ItemMetadata> getItemsById(Long id, DAOPersistenceContext persistenceContext) throws DAOException {
+	public List<ItemMetadata> getItemsById(UUID id, DAOPersistenceContext persistenceContext) throws DAOException {
 		Object[] values = { id };
 		
 		String query = "WITH    RECURSIVE "
@@ -225,7 +225,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	}
 
 	@Override
-	public ItemMetadata findById(Long id, Boolean includeList,
+	public ItemMetadata findById(UUID id, Boolean includeList,
 			Long version, Boolean includeDeleted, Boolean includeChunks, DAOPersistenceContext persistenceContext)
 			throws DAOException {
 		int maxLevel = includeList ? 2 : 1;
@@ -369,7 +369,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	}
 
 	@Override
-	public ItemMetadata findItemVersionsById(Long fileId, DAOPersistenceContext persistenceContext) throws DAOException {
+	public ItemMetadata findItemVersionsById(UUID fileId, DAOPersistenceContext persistenceContext) throws DAOException {
 		// TODO: check include_deleted
 		Object[] values = { fileId };
 		
@@ -419,7 +419,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 	}
 	
 	@Override
-	public List<String> migrateItem(Long itemId, UUID workspaceId, DAOPersistenceContext persistenceContext) throws DAOException{
+	public List<String> migrateItem(UUID itemId, UUID workspaceId, DAOPersistenceContext persistenceContext) throws DAOException{
 		
 		Object[] values = { itemId, workspaceId.toString() };
 		
@@ -453,7 +453,7 @@ public class PostgresqlItemDAO extends PostgresqlDAO implements ItemDAO {
 		
 	}
 	
-	private List<String> getChunksToMigrate(Long itemId, DAOPersistenceContext persistenceContext) throws DAOException, SQLException {
+	private List<String> getChunksToMigrate(UUID itemId, DAOPersistenceContext persistenceContext) throws DAOException, SQLException {
 		
 		Object[] values = { itemId };
 		

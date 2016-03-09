@@ -42,6 +42,7 @@ import com.stacksync.syncservice.handler.SQLSyncHandler;
 import com.stacksync.syncservice.handler.SyncHandler;
 import com.stacksync.syncservice.util.Config;
 import java.util.logging.Level;
+import javax.persistence.EntityManagerFactory;
 
 public class SyncServiceImp extends RemoteObject implements ISyncService {
 
@@ -50,6 +51,12 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 	private transient SyncHandler handler;
 	private transient Broker broker;
 
+        public SyncServiceImp(Broker broker, EntityManagerFactory pool) throws Exception {
+		super();
+		this.broker = broker;
+		handler = new SQLSyncHandler(pool);
+	}
+                
 	public SyncServiceImp(Broker broker, ConnectionPool pool) throws Exception {
 		super();
 		this.broker = broker;
@@ -104,16 +111,18 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
             
 			UUID id = workspace.getId();
 
+                        /* Commented for testing pourposes
 			RemoteWorkspace commitNotifier = broker.lookupMulti(id.toString(), RemoteWorkspace.class);
 			commitNotifier.notifyCommit(result);
+                        */
 
 			logger.debug("Consumer: Response sent to workspace \"" + workspace + "\"");
 
 		} catch (DAOException e) {
 			logger.error(e);
-		} catch (RemoteException e) {
+		}/* catch (RemoteException e) {
                         logger.error(e);
-            }
+            }*/
 	}
 
 	@Override
