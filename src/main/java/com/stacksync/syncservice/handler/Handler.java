@@ -12,11 +12,13 @@ import org.apache.log4j.Logger;
 import com.stacksync.commons.exceptions.ShareProposalNotCreatedException;
 import com.stacksync.commons.exceptions.UserNotFoundException;
 import com.stacksync.commons.models.Chunk;
+import com.stacksync.commons.models.ChunkKey;
 import com.stacksync.commons.models.CommitInfo;
 import com.stacksync.commons.models.Device;
 import com.stacksync.commons.models.Item;
 import com.stacksync.commons.models.ItemMetadata;
 import com.stacksync.commons.models.ItemVersion;
+import com.stacksync.commons.models.ItemVersionKey;
 import com.stacksync.commons.models.User;
 import com.stacksync.commons.models.UserWorkspace;
 import com.stacksync.commons.models.Workspace;
@@ -41,6 +43,8 @@ import com.stacksync.syncservice.storage.StorageManager;
 import com.stacksync.syncservice.storage.StorageManager.StorageType;
 import com.stacksync.syncservice.util.Config;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.logging.Level;
 import javax.persistence.EntityManagerFactory;
 import javax.transaction.HeuristicMixedException;
@@ -611,6 +615,16 @@ public class Handler {
 
         itemDao.put(item, persistenceContext);
 
+        
+        if(!item.getId().equals(metadata.getId())){
+            workspace.addItem(item);
+            if(persistenceContext.getEntityManager() != null){
+               //logger.info("Before adding item to workspace - Thread: " + this.hashCode());
+                persistenceContext.getEntityManager().merge(workspace);
+               //logger.info("After adding item to workspace - Thread: " + this.hashCode());
+            }
+        }
+                
         // set the global ID
         metadata.setId(item.getId());
 
@@ -624,8 +638,23 @@ public class Handler {
 
         objectVersion.setItem(item);
         objectVersion.setDevice(device);
+        
+        ItemVersionKey itemVersionKey = new ItemVersionKey();
+        
+        itemVersionKey.setItemId(item.getId());
+        itemVersionKey.setVersion(metadata.getVersion());
+        
+        objectVersion.setId(itemVersionKey);
+        
         itemVersionDao.add(objectVersion, persistenceContext);
 
+        item.addVersion(objectVersion);
+        if(persistenceContext.getEntityManager() != null){
+           //logger.info("Before adding itemVersion to item - Thread: " + this.hashCode());
+            persistenceContext.getEntityManager().merge(item);
+           //logger.info("After adding itemVersion to item - Thread: " + this.hashCode());
+        }
+        
         // If no folder, create new chunks and update the available quota
         if (!metadata.isFolder()) {
             long fileSize = metadata.getSize();
@@ -690,7 +719,17 @@ public class Handler {
                 int i = 0;
 
                 for (String chunkName : chunksString) {
-                    chunks.add(new Chunk(chunkName, i));
+                    Chunk chunk = new Chunk(chunkName, i, objectVersion);
+                    
+                    ChunkKey chunkKey = new ChunkKey();
+                    chunkKey.setItemVersionId(objectVersion.getId());
+                    chunkKey.setOrder(i);
+                    
+                    chunk.setId(chunkKey);
+                    
+                    persistenceContext.getEntityManager().persist(chunk);
+                   //logger.info("Chunk "+ chunk.getId()+" created - Thread:" + this.hashCode());
+                    chunks.add(chunk);
                     i++;
                 }
 
@@ -842,5 +881,41 @@ public class Handler {
         } catch (SQLException e) {
             throw new DAOException(e);
         }
+    }
+    
+    public UUID[] createUser(User user){
+       Workspace workspace = null;
+       Device device = null;
+        try {
+            DAOPersistenceContext persistenceContext = beginTransaction();
+            userDao.add(user,persistenceContext);
+            
+            workspace = new Workspace(null, 1, user, false, false);
+            workspace.setSwiftContainer("1");
+            workspace.setSwiftUrl("1");
+            workspace.setName("name");
+            workspaceDAO.add(workspace,persistenceContext);
+
+            workspaceDAO.addUser(user, workspace,persistenceContext);
+            
+            device = new Device(null, "junitdevice", user);
+            device.setAppVersion("1.0");
+            Date date = new Timestamp(System.currentTimeMillis());
+            device.setLastAccessAt(date);
+            device.setLastIp("192.168.1.2");
+            device.setOs("Darwin");
+            deviceDao.add(device,persistenceContext);
+            
+            user.addDevice(device);
+            
+            userDao.update(user,persistenceContext);
+            
+            commitTransaction(persistenceContext);
+            
+        } catch (DAOException ex) {
+            logger.error(String.format("User cannot be created..."));
+        }
+        
+        return new UUID[]{user.getId(), workspace.getId(), device.getId()};
     }
 }

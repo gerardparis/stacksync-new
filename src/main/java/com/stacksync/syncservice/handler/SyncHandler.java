@@ -42,4 +42,6 @@ public interface SyncHandler {
         /*Testing pourposes
             public void doCreateUser(UUID id);
         */
+        
+         public UUID[] createUser(User user);
 }

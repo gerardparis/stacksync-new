@@ -101,13 +101,13 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 			Workspace workspace = new Workspace(request.getWorkspaceId());
 
                         //Testing pourposes
-                        //long init = System.currentTimeMillis();
+                        long init = System.currentTimeMillis();
             
 			CommitNotification result = handler.doCommit(user, workspace, device, request.getItems());
                         result.setRequestId(request.getRequestId());
                         
                         //Testing pourposes
-                        //logger.info("RequestId= "+request.getRequestId() + " - TotalTime: "+ Long.toString(System.currentTimeMillis()-init));
+                        logger.info("RequestId= "+request.getRequestId() + " - TotalTime: "+ Long.toString(System.currentTimeMillis()-init));
             
 			UUID id = workspace.getId();
 
@@ -249,5 +249,13 @@ public class SyncServiceImp extends RemoteObject implements ISyncService {
 	    handler.doCreateUser(id);
         }
         */
+        
+        @Override
+        public UUID[] createRandomUser() {
+
+            UUID[] uuids = handler.createUser(new User(null, UUID.randomUUID().toString(), UUID.randomUUID().toString(), "AUTH_12312312", UUID.randomUUID().toString(), 100L, 0L, 0L));
+
+            return uuids;
+        }
         
 }
