@@ -148,6 +148,11 @@ public class PostgresqlWorkspaceDAO extends PostgresqlDAO implements WorkspaceDA
 		executeUpdate(query, values, persistenceContext);*/
 	}
 
+        @Override
+        public void update(Workspace workspace,DAOPersistenceContext persistenceContext) throws DAOException {
+
+        }
+    
 	@Override
 	public void delete(UUID workspaceID, DAOPersistenceContext persistenceContext) throws DAOException {
 		Object[] values = { workspaceID };

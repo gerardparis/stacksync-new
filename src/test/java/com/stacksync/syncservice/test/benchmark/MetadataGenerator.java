@@ -82,7 +82,8 @@ public class MetadataGenerator {
 		List<ItemVersion> versions = new ArrayList<ItemVersion>();
 		for (int i = 0; i < numVersions; i++) {
 			ItemVersion version = new ItemVersion();
-			version.setItem(item);
+			// TO REPAIR
+                        //version.setItem(item);
 			version.setDevice(device);
 			version.setVersion(i + 1L);
 			version.setModifiedAt(new Date());
@@ -105,10 +106,11 @@ public class MetadataGenerator {
 					chunks.add(chunk);
 				}
 			}
-			version.setChunks(chunks);
-			versions.add(version);
+                        workspace.putItemVersion(item.getId(), version);
+			workspace.putVersionChunks(item.getId(), version.getVersion(), chunks);
 		}
-		item.setVersions(versions);
+                //item.setVersions(versions);
+                
 
 		//System.out.println("Object Metadata -> " + object);
 		return item;

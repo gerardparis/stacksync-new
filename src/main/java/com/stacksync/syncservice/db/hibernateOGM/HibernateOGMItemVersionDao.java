@@ -9,17 +9,12 @@ import com.stacksync.commons.models.Chunk;
 import com.stacksync.commons.models.Item;
 import com.stacksync.commons.models.ItemMetadata;
 import com.stacksync.commons.models.ItemVersion;
-import com.stacksync.syncservice.db.DAOError;
 import com.stacksync.syncservice.db.DAOPersistenceContext;
-import com.stacksync.syncservice.db.DAOUtil;
 import com.stacksync.syncservice.db.ItemVersionDAO;
 import com.stacksync.syncservice.exceptions.dao.DAOException;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
-import javax.persistence.EntityManager;
-import org.hibernate.HibernateException;
-import org.hibernate.Session;
 
 public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemVersionDAO {
 
@@ -29,20 +24,20 @@ public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemV
         super();
     }
 
-    public static ItemMetadata fromItemAndVersionToItemMetadata(Item item, ItemVersion itemVersion,DAOPersistenceContext persistenceContext) {
+    public static ItemMetadata fromItemAndVersionToItemMetadata(Item item, ItemVersion itemVersion, List<Chunk> chunks, DAOPersistenceContext persistenceContext) {
 
-        List<String> chunks = null;
+        List<String> chunksMetaData = null;
         if (!item.isFolder()) {
-            chunks = new ArrayList<String>();
+            chunksMetaData = new ArrayList<String>();
 
-            for (Chunk chunk : itemVersion.getChunks()) {
-                chunks.add(chunk.toString());
+            for (Chunk chunk : chunks) {
+                chunksMetaData.add(chunk.toString());
             }
         }
 
         ItemMetadata itemMetadata = new ItemMetadata(item.getId(),
                 itemVersion.getVersion(),
-                itemVersion.getDevice().getId(),
+                itemVersion.getDevice(),
                 item.getParentId(),
                 item.getClientParentFileVersion(),
                 itemVersion.getStatus(),
@@ -52,7 +47,7 @@ public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemV
                 item.isFolder(),
                 item.getFilename(),
                 item.getMimetype(),
-                chunks);
+                chunksMetaData);
 
         return itemMetadata;
 
@@ -60,7 +55,7 @@ public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemV
 
     @Override
     public ItemMetadata findByItemIdAndVersion(UUID id, Long version,DAOPersistenceContext persistenceContext) throws DAOException {
-        Item item = (Item) persistenceContext.getEntityManager().find(Item.class, id);
+        /*Item item = (Item) persistenceContext.getEntityManager().find(Item.class, id);
         ItemVersion versionItem = null;
 
         for (ItemVersion itemVersion : item.getVersions()) {
@@ -70,7 +65,8 @@ public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemV
             }
         }
 
-        return fromItemAndVersionToItemMetadata(item, versionItem, persistenceContext);
+        return fromItemAndVersionToItemMetadata(item, versionItem, persistenceContext);*/
+        return null;
     }
 
     @Override
@@ -100,6 +96,7 @@ public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemV
 
     @Override
     public void insertChunk(ItemVersion item, UUID chunkId, Integer order, DAOPersistenceContext persistenceContext) throws DAOException {
+        /*
         try {
             
             Chunk chunk = new Chunk(chunkId.toString(), order);
@@ -111,11 +108,12 @@ public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemV
             logger.error(e);
             throw new DAOException(DAOError.INTERNAL_SERVER_ERROR);
         }
+        */
     }
 
     @Override
     public void insertChunks(List<Chunk> chunks, ItemVersion item, DAOPersistenceContext persistenceContext) throws DAOException {
-        try {
+        /*try {
             if (chunks.isEmpty()) {
                 throw new IllegalArgumentException("No chunks received");
             }
@@ -126,13 +124,13 @@ public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemV
         } catch (HibernateException e) {
             logger.error(e);
             throw new DAOException(DAOError.INTERNAL_SERVER_ERROR);
-        }
+        }*/
 
     }
 
     @Override
     public List<Chunk> findChunks(UUID itemVersionId, DAOPersistenceContext persistenceContext) throws DAOException {
-        try {
+        /*try {
 
             ItemVersion item = (ItemVersion) persistenceContext.getEntityManager().find(ItemVersion.class, itemVersionId);
 
@@ -140,7 +138,8 @@ public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemV
         } catch (HibernateException e) {
             logger.error(e);
             throw new DAOException(DAOError.INTERNAL_SERVER_ERROR);
-        }
+        }*/
+        return null;
     }
 
 }

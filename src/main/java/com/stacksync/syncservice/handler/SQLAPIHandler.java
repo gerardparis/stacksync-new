@@ -548,7 +548,7 @@ public class SQLAPIHandler extends Handler implements APIHandler {
 
     @Override
     public APIRestoreMetadata restoreMetadata(User user, ItemMetadata item) {
-        try {
+        /*try {
 
             DAOPersistenceContext persistenceContext = beginTransaction();
             
@@ -586,8 +586,9 @@ public class SQLAPIHandler extends Handler implements APIHandler {
                     item.setChecksum(restoredObject.getChecksum());
                     item.setChunks(chunks);
                     item.setModifiedAt(restoredObject.getModifiedAt());
-                    item.setDeviceId(restoredObject.getDevice().getId());
-                    item.setFilename(restoredObject.getItem().getFilename());
+                    item.setDeviceId(restoredObject.getDevice());
+                    //TO REPAIR
+                    //item.setFilename(restoredObject.getItem().getFilename());
                     item.setSize(restoredObject.getSize());
 
                     item.setIsFolder(serverItem.isFolder());
@@ -618,7 +619,8 @@ public class SQLAPIHandler extends Handler implements APIHandler {
             APIRestoreMetadata response = new APIRestoreMetadata(item, false,
                     400, e.getMessage());
             return response;
-        }
+        }*/
+        return null;
     }
 
     @Override

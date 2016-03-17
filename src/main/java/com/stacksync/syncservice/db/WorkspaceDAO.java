@@ -20,6 +20,8 @@ public interface WorkspaceDAO {
 
 	public void add(Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException;
 
+        public void update(Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException;
+
 	public void update(User user, Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException;
 
 	public void addUser(User user, Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException;

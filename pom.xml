@@ -79,7 +79,7 @@
         <dependency>
             <groupId>com.stacksync</groupId>
             <artifactId>stacksync-commons</artifactId>
-            <version>1.4.4-ogm</version>
+            <version>1.4.4-ogm-oneobject</version>
         </dependency>
         <dependency>
             <groupId>objectmq</groupId>

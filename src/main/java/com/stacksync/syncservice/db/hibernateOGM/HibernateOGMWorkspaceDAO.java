@@ -112,6 +112,11 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
             throw new DAOException(DAOError.INTERNAL_SERVER_ERROR);
         }
     }
+    
+    @Override
+    public void update(Workspace workspace,DAOPersistenceContext persistenceContext) throws DAOException {
+        persistenceContext.getEntityManager().merge(workspace);
+    }
 
     @Override
     public void update(User user, Workspace workspace,DAOPersistenceContext persistenceContext) throws DAOException {
@@ -134,8 +139,6 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
         userWorkspace.setName(workspace.getName());
 
         */
-        
-        persistenceContext.getEntityManager().merge(workspace);
     }
 
     @Override
@@ -146,6 +149,7 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
 
     @Override
     public void addUser(User user, Workspace workspace,DAOPersistenceContext persistenceContext) throws DAOException {
+        /*
         if (user == null || !user.isValid()) {
             throw new IllegalArgumentException("User not valid");
         } else if (workspace == null || !workspace.isValid()) {
@@ -165,6 +169,7 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
         user.setUserWorkspaces(workspace);
         
         persistenceContext.getEntityManager().merge(workspace);
+        */
         
     }
 
@@ -189,15 +194,16 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
     @Override
     public Workspace getByItemId(UUID itemId, DAOPersistenceContext persistenceContext) throws DAOException {
 
-        Item item = (Item) persistenceContext.getEntityManager().find(Item.class, itemId);
+        /*Item item = (Item) persistenceContext.getEntityManager().find(Item.class, itemId);
 
-        return item.getWorkspace();
+        return item.getWorkspace();*/
+        return null;
     }
 
     @Override
     public List<UserWorkspace> getMembersById(UUID workspaceId, DAOPersistenceContext persistenceContext) throws DAOException {
 
-        Workspace workspace = (Workspace) persistenceContext.getEntityManager().find(Workspace.class, workspaceId);
+        //Workspace workspace = (Workspace) persistenceContext.getEntityManager().find(Workspace.class, workspaceId);
 
         //return workspace.getWorkspaceUsers();
 

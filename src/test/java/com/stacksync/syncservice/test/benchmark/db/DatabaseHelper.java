@@ -77,6 +77,7 @@ public class DatabaseHelper {
 
 	public void storeObjects(List<Item> objectsLevel) throws IllegalArgumentException, DAOException {
 
+            /*
 		long numChunk = 0, totalTimeChunk = 0;
 		long numVersion = 0, totalTimeVersion = 0;
 		long numObject = 0, totalTimeObject = 0;
@@ -89,6 +90,7 @@ public class DatabaseHelper {
 			long startObjectTotal = System.currentTimeMillis();
 
 			objectDao.put(object, persistenceContext);
+                        //TODO
 			for (ItemVersion version : object.getVersions()) {
 
 				long startVersionTotal = System.currentTimeMillis();
@@ -109,6 +111,7 @@ public class DatabaseHelper {
 				// totalVersionTime + " ms");
 				numVersion++;
 			}
+                        
 
 			totalTimeObject += System.currentTimeMillis() - startObjectTotal;
 			numObject++;
@@ -131,6 +134,8 @@ public class DatabaseHelper {
 		long totalTime = System.currentTimeMillis() - startTotal;
 
 		System.out.println("Total level time --> " + totalTime + " ms");
+            
+                */
 
 	}
 

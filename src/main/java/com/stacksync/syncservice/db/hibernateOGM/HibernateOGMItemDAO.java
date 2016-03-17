@@ -82,11 +82,11 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
 
             if (item.getParent() != null) {
                 if (itemDB.getParent() != null) {
-                    if (!item.getParent().getId().equals(itemDB.getParent().getId())) {
-                        itemDB.setParent(persistenceContext.getEntityManager().find(Item.class, item.getParent().getId()));
+                    if (!item.getParent().equals(itemDB.getParent())) {
+                        itemDB.setParent(persistenceContext.getEntityManager().find(Item.class, item.getParent()));
                     }
                 } else {
-                    itemDB.setParent(persistenceContext.getEntityManager().find(Item.class, item.getParent().getId()));
+                    itemDB.setParent(persistenceContext.getEntityManager().find(Item.class, item.getParent()));
                 }
             } else {
                 if (itemDB.getParent() != null) {
@@ -239,7 +239,7 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
             throws DAOException {
 
         //TO DO, recursion missing and includeDeleted
-        Item item = (Item) persistenceContext.getEntityManager().find(Item.class, id);
+        /*Item item = (Item) persistenceContext.getEntityManager().find(Item.class, id);
 
         ItemVersion itemVersion = null;
 
@@ -257,6 +257,8 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
         int maxLevel = includeList ? 2 : 1;
         
         return HibernateOGMItemVersionDao.fromItemAndVersionToItemMetadata(item, itemVersion, persistenceContext);
+          */
+        return null;
                 
         /*
         

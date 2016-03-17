@@ -12,13 +12,11 @@ import org.apache.log4j.Logger;
 import com.stacksync.commons.exceptions.ShareProposalNotCreatedException;
 import com.stacksync.commons.exceptions.UserNotFoundException;
 import com.stacksync.commons.models.Chunk;
-import com.stacksync.commons.models.ChunkKey;
 import com.stacksync.commons.models.CommitInfo;
 import com.stacksync.commons.models.Device;
 import com.stacksync.commons.models.Item;
 import com.stacksync.commons.models.ItemMetadata;
 import com.stacksync.commons.models.ItemVersion;
-import com.stacksync.commons.models.ItemVersionKey;
 import com.stacksync.commons.models.User;
 import com.stacksync.commons.models.UserWorkspace;
 import com.stacksync.commons.models.Workspace;
@@ -123,10 +121,10 @@ public class Handler {
         // TODO: check if the workspace belongs to the user or its been given
         // access
 
-        device = deviceDao.get(device.getId(), persistenceContext);
+        device = workspace.getDevice(device.getId());
         // TODO: check if the device belongs to the user
 
-        user = userDao.findById(user.getId(), persistenceContext);
+        user = workspace.getUser(user.getId());
 
         for (ItemMetadata item : items) {
 
@@ -150,12 +148,14 @@ public class Handler {
                     }
                 }
                 if (workspace.isShared()) {
-                    User owner = userDao.findById(workspace.getOwner().getId(), persistenceContext);
+                    User owner = workspace.getOwner();
                     this.commitObject(owner, item, workspace, device, persistenceContext);
                 } else {
                     this.commitObject(user, item, workspace, device, persistenceContext);
 
                 }
+                
+                workspaceDAO.update(workspace, persistenceContext);
 
                 if (item.getTempId() != null) {
                     tempIds.put(item.getTempId(), item.getId());
@@ -262,7 +262,8 @@ public class Handler {
             workspace.setEncrypted(isEncrypted);
             workspace.setName(item.getFilename());
             workspace.setOwner(user);
-            workspace.setUsers(addressees);
+            // TO REPAIR
+            //workspace.setUsers(addressees);
             workspace.setSwiftContainer(container);
             workspace.setSwiftUrl(Config.getSwiftUrl() + "/" + user.getSwiftAccount());
 
@@ -545,7 +546,7 @@ public class Handler {
     private void commitObject(User user, ItemMetadata item, Workspace workspace, Device device, DAOPersistenceContext persistenceContext)
             throws CommitWrongVersion, CommitExistantVersion, DAOException {
 
-        Item serverItem = itemDao.findById(item.getId(), persistenceContext);
+        Item serverItem = workspace.getItem(item.getId());
 
         // Check if this object already exists in the server.
         if (serverItem == null) {
@@ -554,8 +555,7 @@ public class Handler {
                 this.saveNewObject(item, workspace, device, persistenceContext);
 
                 // Update quota used
-                user.setQuotaUsedLogical(newQuotaUsedLogical);
-                userDao.updateAvailableQuota(user, persistenceContext);
+                 user.setQuotaUsedLogical(newQuotaUsedLogical);
             } else {
                 throw new CommitWrongVersion("Invalid version " + item.getVersion() + ". Expected version 1.");
             }
@@ -598,12 +598,11 @@ public class Handler {
         UUID parentId = metadata.getParentId();
         Item parent = null;
         if (parentId != null) {
-            parent = itemDao.findById(parentId, persistenceContext);
+            parent = workspace.getItem(parentId);
         }
 
         // Insert object to DB
-        Item item = new Item();
-        item.setId(metadata.getId());
+        Item item = new Item(UUID.randomUUID());
         item.setFilename(metadata.getFilename());
         item.setMimetype(metadata.getMimetype());
         item.setIsFolder(metadata.isFolder());
@@ -611,19 +610,9 @@ public class Handler {
 
         item.setLatestVersion(metadata.getVersion());
         item.setWorkspace(workspace);
-        item.setParent(parent);
+        if(parent!=null) item.setParent(parent);
 
-        itemDao.put(item, persistenceContext);
-
-        
-        if(!item.getId().equals(metadata.getId())){
-            workspace.addItem(item);
-            if(persistenceContext.getEntityManager() != null){
-               //logger.info("Before adding item to workspace - Thread: " + this.hashCode());
-                persistenceContext.getEntityManager().merge(workspace);
-               //logger.info("After adding item to workspace - Thread: " + this.hashCode());
-            }
-        }
+        workspace.addItem(item);
                 
         // set the global ID
         metadata.setId(item.getId());
@@ -635,32 +624,15 @@ public class Handler {
         objectVersion.setChecksum(metadata.getChecksum());
         objectVersion.setStatus(metadata.getStatus());
         objectVersion.setSize(metadata.getSize());
-
-        objectVersion.setItem(item);
-        objectVersion.setDevice(device);
         
-        ItemVersionKey itemVersionKey = new ItemVersionKey();
-        
-        itemVersionKey.setItemId(item.getId());
-        itemVersionKey.setVersion(metadata.getVersion());
-        
-        objectVersion.setId(itemVersionKey);
-        
-        itemVersionDao.add(objectVersion, persistenceContext);
-
-        item.addVersion(objectVersion);
-        if(persistenceContext.getEntityManager() != null){
-           //logger.info("Before adding itemVersion to item - Thread: " + this.hashCode());
-            persistenceContext.getEntityManager().merge(item);
-           //logger.info("After adding itemVersion to item - Thread: " + this.hashCode());
-        }
+        workspace.putItemVersion(item.getId(), objectVersion);
         
         // If no folder, create new chunks and update the available quota
         if (!metadata.isFolder()) {
             long fileSize = metadata.getSize();
 
             List<String> chunks = metadata.getChunks();
-            this.createChunks(chunks, objectVersion, persistenceContext);
+            this.createChunks(workspace, item, chunks, objectVersion, persistenceContext);
         }
 
     }
@@ -676,7 +648,6 @@ public class Handler {
         itemVersion.setStatus(metadata.getStatus());
         itemVersion.setSize(metadata.getSize());
 
-        itemVersion.setItem(serverItem);
         itemVersion.setDevice(device);
 
         itemVersionDao.add(itemVersion, persistenceContext);
@@ -684,7 +655,7 @@ public class Handler {
         // If no folder, create new chunks
         if (!metadata.isFolder()) {
             List<String> chunks = metadata.getChunks();
-            this.createChunks(chunks, itemVersion, persistenceContext);
+            this.createChunks(workspace, serverItem, chunks, itemVersion, persistenceContext);
         }
 
         // TODO To Test!!
@@ -711,7 +682,7 @@ public class Handler {
 
     }
 
-    private void createChunks(List<String> chunksString, ItemVersion objectVersion, DAOPersistenceContext persistenceContext) throws IllegalArgumentException,
+    private void createChunks(Workspace workspace , Item item, List<String> chunksString, ItemVersion objectVersion, DAOPersistenceContext persistenceContext) throws IllegalArgumentException,
             DAOException {
         if (chunksString != null) {
             if (chunksString.size() > 0) {
@@ -719,21 +690,11 @@ public class Handler {
                 int i = 0;
 
                 for (String chunkName : chunksString) {
-                    Chunk chunk = new Chunk(chunkName, i, objectVersion);
-                    
-                    ChunkKey chunkKey = new ChunkKey();
-                    chunkKey.setItemVersionId(objectVersion.getId());
-                    chunkKey.setOrder(i);
-                    
-                    chunk.setId(chunkKey);
-                    
-                    persistenceContext.getEntityManager().persist(chunk);
-                   //logger.info("Chunk "+ chunk.getId()+" created - Thread:" + this.hashCode());
+                    Chunk chunk = new Chunk(chunkName, i);
                     chunks.add(chunk);
                     i++;
                 }
-
-                itemVersionDao.insertChunks(chunks, objectVersion, persistenceContext);
+                workspace.putVersionChunks(item.getId(), objectVersion.getVersion(), chunks);
             }
         }
     }
@@ -883,33 +844,31 @@ public class Handler {
         }
     }
     
+    //TODO
     public UUID[] createUser(User user){
        Workspace workspace = null;
        Device device = null;
         try {
             DAOPersistenceContext persistenceContext = beginTransaction();
-            userDao.add(user,persistenceContext);
             
             workspace = new Workspace(null, 1, user, false, false);
             workspace.setSwiftContainer("1");
             workspace.setSwiftUrl("1");
             workspace.setName("name");
-            workspaceDAO.add(workspace,persistenceContext);
-
-            workspaceDAO.addUser(user, workspace,persistenceContext);
             
             device = new Device(null, "junitdevice", user);
+            device.setId(UUID.randomUUID());
             device.setAppVersion("1.0");
             Date date = new Timestamp(System.currentTimeMillis());
             device.setLastAccessAt(date);
             device.setLastIp("192.168.1.2");
             device.setOs("Darwin");
-            deviceDao.add(device,persistenceContext);
             
-            user.addDevice(device);
+            user.setId(UUID.randomUUID());
+            workspace.addDevice(device);
             
-            userDao.update(user,persistenceContext);
-            
+            workspaceDAO.add(workspace,persistenceContext);
+
             commitTransaction(persistenceContext);
             
         } catch (DAOException ex) {

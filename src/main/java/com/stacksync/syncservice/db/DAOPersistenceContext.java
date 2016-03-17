@@ -43,6 +43,8 @@ public class DAOPersistenceContext {
             connection.setAutoCommit(true);
             connection.close();
         } else if (tm != null) {
+            em.flush();
+            em.close();
             tm.commit();
         }
     }
