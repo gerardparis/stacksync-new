@@ -550,12 +550,12 @@ public class Handler {
         // Check if this object already exists in the server.
         if (serverItem == null) {
             if (item.getVersion().equals(1L)) {
-                long newQuotaUsedLogical = item.getSize() + user.getQuotaUsedLogical();
+                //long newQuotaUsedLogical = item.getSize() + user.getQuotaUsedLogical();
                 this.saveNewObject(item, workspace, device, persistenceContext);
 
                 // Update quota used
-                user.setQuotaUsedLogical(newQuotaUsedLogical);
-                userDao.updateAvailableQuota(user, persistenceContext);
+                //user.setQuotaUsedLogical(newQuotaUsedLogical);
+                //userDao.updateAvailableQuota(user, persistenceContext);
             } else {
                 throw new CommitWrongVersion("Invalid version " + item.getVersion() + ". Expected version 1.");
             }
