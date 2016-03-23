@@ -136,7 +136,11 @@ public class SyncServiceDaemon implements Daemon {
     public void start() throws Exception {
 
         try {
-            broker.bind(ISyncService.class.getSimpleName(), syncService);
+            if(Config.getProperties().getProperty("omq.queueName")!=null){
+                broker.bind(Config.getProperties().getProperty("omq.queueName"), syncService);
+            } else {
+                broker.bind(ISyncService.class.getSimpleName(), syncService);
+            }
             logger.info("StackSync Server is ready and waiting for messages...");
         } catch (Exception e) {
             logger.fatal("Could not bind queue.", e);

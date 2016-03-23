@@ -22,7 +22,7 @@
         <!-- *************************************** -->
         <!--     Default cache used as template      -->
         <!-- *************************************** -->
-        <distributed-cache name="DEFAULT" mode="SYNC" owners="1">
+        <distributed-cache name="DEFAULT" mode="ASYNC" owners="1">
             <locking striping="false" acquire-timeout="10000"
                 concurrency-level="500" write-skew="false" />
             <transaction mode="NON_DURABLE_XA"  locking="OPTIMISTIC"
@@ -37,7 +37,7 @@
         <!-- *************************************** -->
         <!--     Cache to store the OGM entities     -->
         <!-- *************************************** -->
-        <distributed-cache name="ENTITIES" mode="SYNC" owners="1">
+        <distributed-cache name="ENTITIES" mode="ASYNC" owners="1">
             <locking striping="false" acquire-timeout="10000"
                 concurrency-level="500" write-skew="false" />
             <transaction mode="NON_DURABLE_XA" locking="OPTIMISTIC"
@@ -52,7 +52,7 @@
         <!-- *********************************************** -->
         <!--   Cache to store the relations across entities  -->
         <!-- *********************************************** -->
-        <distributed-cache name="ASSOCIATIONS" mode="SYNC" owners="1">
+        <distributed-cache name="ASSOCIATIONS" mode="ASYNC" owners="1">
             <locking striping="false" acquire-timeout="10000"
                 concurrency-level="500" write-skew="false" />
             <transaction mode="NON_DURABLE_XA" locking="OPTIMISTIC"
@@ -67,7 +67,7 @@
         <!-- ***************************** -->
         <!--   Cache to store identifiers  -->
         <!-- ***************************** -->
-        <distributed-cache name="IDENTIFIERS" mode="SYNC" owners="1">
+        <distributed-cache name="IDENTIFIERS" mode="ASYNC" owners="1">
             <locking striping="false" acquire-timeout="10000"
                 concurrency-level="500" write-skew="false" />
             <transaction mode="NON_DURABLE_XA" locking="OPTIMISTIC"

@@ -104,8 +104,6 @@ public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemV
             
             Chunk chunk = new Chunk(chunkId.toString(), order);
             persistenceContext.getEntityManager().persist(chunk);
-            chunk.setItemVersion(item);
-            persistenceContext.getEntityManager().merge(chunk);
 
         } catch (HibernateException e) {
             logger.error(e);

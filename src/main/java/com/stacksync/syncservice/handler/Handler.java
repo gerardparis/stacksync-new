@@ -655,7 +655,7 @@ public class Handler {
            //logger.info("After adding itemVersion to item - Thread: " + this.hashCode());
         }
         
-        // If no folder, create new chunks and update the available quota
+        // If no folder, create new chunks 
         if (!metadata.isFolder()) {
             long fileSize = metadata.getSize();
 
@@ -719,16 +719,17 @@ public class Handler {
                 int i = 0;
 
                 for (String chunkName : chunksString) {
-                    Chunk chunk = new Chunk(chunkName, i, objectVersion);
+                    Chunk chunk = new Chunk(chunkName, i);
                     
-                    ChunkKey chunkKey = new ChunkKey();
+                    /*ChunkKey chunkKey = new ChunkKey();
                     chunkKey.setItemVersionId(objectVersion.getId());
                     chunkKey.setOrder(i);
                     
                     chunk.setId(chunkKey);
-                    
-                    persistenceContext.getEntityManager().persist(chunk);
-                   //logger.info("Chunk "+ chunk.getId()+" created - Thread:" + this.hashCode());
+                    */
+                   
+                    //persistenceContext.getEntityManager().persist(chunk);
+                    //logger.info("Chunk "+ chunk.getId()+" created - Thread:" + this.hashCode());
                     chunks.add(chunk);
                     i++;
                 }
