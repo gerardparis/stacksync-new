@@ -4,10 +4,6 @@
     <!-- Use Hibernate OGM provider: configuration will be transparent -->
     <provider>org.hibernate.ogm.jpa.HibernateOgmPersistence</provider>
     <class>com.stacksync.commons.models.Workspace</class>
-    <class>com.stacksync.commons.models.Chunk</class>
-    <class>com.stacksync.commons.models.Device</class>
-    <class>com.stacksync.commons.models.Item</class>
-    <class>com.stacksync.commons.models.ItemVersion</class>
     <class>com.stacksync.commons.models.User</class>
     <properties>
       <property name="hibernate.transaction.jta.platform" value="org.hibernate.service.jta.platform.internal.JBossStandAloneJtaPlatform"/>

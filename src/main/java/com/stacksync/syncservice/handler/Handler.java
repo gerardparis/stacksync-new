@@ -120,6 +120,8 @@ public class Handler {
         HashMap<UUID, UUID> tempIds = new HashMap<UUID, UUID>();
 
         workspace = workspaceDAO.getById(workspace.getId(), persistenceContext);
+        
+        workspace.deserializeObject();
         // TODO: check if the workspace belongs to the user or its been given
         // access
 
@@ -156,6 +158,8 @@ public class Handler {
                     this.commitObject(user, item, workspace, device, persistenceContext);
 
                 }
+                
+                workspace.serializeObject();
                 
                 workspaceDAO.update(workspace, persistenceContext);
 
