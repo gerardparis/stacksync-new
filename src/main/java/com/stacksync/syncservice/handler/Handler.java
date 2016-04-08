@@ -111,8 +111,10 @@ public class Handler {
     public CommitNotification doCommit(User user, Workspace workspace, Device device, List<ItemMetadata> items)
             throws DAOException {
 
-        DAOPersistenceContext persistenceContext = beginTransaction();
+        //DAOPersistenceContext persistenceContext = beginTransaction();
 
+        DAOPersistenceContext persistenceContext = startConnection();
+        
         List<CommitInfo> responseObjects = new ArrayList<CommitInfo>();
 
         HashMap<UUID, UUID> tempIds = new HashMap<UUID, UUID>();
@@ -182,7 +184,8 @@ public class Handler {
             responseObjects.add(new CommitInfo(item.getVersion(), committed, objectResponse));
         }
 
-        commitTransaction(persistenceContext);
+        //commitTransaction(persistenceContext);
+        closeConnection(persistenceContext);
 
         return new CommitNotification(null, responseObjects, user.getQuotaLimit(), user.getQuotaUsedLogical());
     }
