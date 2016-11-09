@@ -117,37 +117,10 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
     public List<ItemMetadata> getItemsByWorkspaceId(UUID workspaceId,DAOPersistenceContext persistenceContext)
             throws DAOException {
 
-        /* TODO, used by getChanges
         
          Object[] values = {workspaceId, workspaceId};
 
-         String query = "WITH RECURSIVE q AS "
-         + "( "
-         + " SELECT i.id AS item_id, i.parent_id, i.client_parent_file_version, "
-         + " i.filename, iv.id AS version_id, iv.version, i.is_folder, "
-         + " i.workspace_id, "
-         + " iv.size, iv.status, i.mimetype, "
-         + " iv.checksum, iv.device_id, iv.modified_at, "
-         + " ARRAY[i.id] AS level_array "
-         + " FROM workspace w  "
-         + " INNER JOIN item i ON w.id = i.workspace_id "
-         + " INNER JOIN item_version iv ON i.id = iv.item_id AND i.latest_version = iv.version "
-         + " WHERE w.id = ?::uuid AND i.parent_id IS NULL "
-         + " UNION ALL  "
-         + " SELECT i2.id AS item_id, i2.parent_id, i2.client_parent_file_version, "
-         + " i2.filename, iv2.id AS version_id, iv2.version, i2.is_folder,  "
-         + " i2.workspace_id, "
-         + " iv2.size, iv2.status, i2.mimetype, "
-         + " iv2.checksum, iv2.device_id, iv2.modified_at,  "
-         + " q.level_array || i2.id "
-         + " FROM q  "
-         + " JOIN item i2 ON i2.parent_id = q.item_id "
-         + " INNER JOIN item_version iv2 ON i2.id = iv2.item_id AND i2.latest_version = iv2.version "
-         + " WHERE i2.workspace_id=?::uuid "
-         + " )  "
-         + " SELECT array_upper(level_array, 1) as level, q.*, get_chunks(q.version_id) AS chunks "
-         + " FROM q  "
-         + " ORDER BY level_array ASC";
+
 
          ResultSet result = null;
          List<ItemMetadata> items;
@@ -168,44 +141,14 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
          }
 
          return items;
-         */
+         
         return null;
     }
 
     @Override
     public List<ItemMetadata> getItemsById(UUID id,DAOPersistenceContext persistenceContext) throws DAOException {
 
-        /* not used by the moment, only required for API
-        
-         Object[] values = {id};
-
-         String query = "WITH    RECURSIVE "
-         + " q AS  "
-         + " (  "
-         + " SELECT i.id AS item_id, i.parent_id, i.client_parent_file_version, "
-         + " 	i.filename, iv.id AS version_id, iv.version, i.is_folder, "
-         + " 	i.workspace_id, "
-         + " 	iv.size, iv.status, i.mimetype, "
-         + " 	iv.checksum, iv.device_id, iv.modified_at, "
-         + " 	ARRAY[i.id] AS level_array "
-         + " FROM    item i "
-         + " INNER JOIN item_version iv ON i.id = iv.item_id AND i.latest_version = iv.version "
-         + " WHERE   i.id = ? "
-         + " UNION ALL "
-         + " SELECT i2.id AS item_id, i2.parent_id, i2.client_parent_file_version, "
-         + " 	i2.filename, iv2.id AS version_id, iv2.version, i2.is_folder,  "
-         + " 	i2.workspace_id, "
-         + " 	iv2.size, iv2.status, i2.mimetype, "
-         + " 	iv2.checksum, iv2.device_id, iv2.modified_at,  "
-         + " 	q.level_array || i2.id "
-         + " FROM    q "
-         + " JOIN    item i2 ON i2.parent_id = q.item_id "
-         + " INNER JOIN item_version iv2 ON i2.id = iv2.item_id AND i2.latest_version = iv2.version "
-         + "	) "
-         + " SELECT  array_upper(level_array, 1) as level, q.* "
-         + " FROM    q "
-         + " ORDER BY  "
-         + "       level_array ASC";
+    
 
          ResultSet result = null;
          List<ItemMetadata> list = new ArrayList<ItemMetadata>();
@@ -229,7 +172,7 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
          }
 
          return list;
-         */
+        
         return null;
     }
 
@@ -258,39 +201,13 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
         
         return HibernateOGMItemVersionDao.fromItemAndVersionToItemMetadata(item, itemVersion, persistenceContext);
                 
-        /*
+        
         
         String chunks = (includeChunks) ? ", get_chunks(%s.id) AS chunks" : "";
         // TODO: check include_deleted
         Object[] values = {id, maxLevel};
 
-        String query = String
-                .format("WITH    RECURSIVE "
-                        + " q AS  "
-                        + " (  "
-                        + " SELECT i.id AS item_id, i.parent_id, i.client_parent_file_version, "
-                        + "     i.filename, iv.version, i.is_folder, "
-                        + "     iv.device_id, i.workspace_id, iv.size, iv.status, i.mimetype, "
-                        + "     iv.checksum, iv.modified_at, "
-                        + "     ARRAY[i.id] AS level_array "
-                        + String.format(chunks, "iv")
-                        + " FROM    item i "
-                        + " INNER JOIN item_version iv ON i.id = iv.item_id AND %s = iv.version "
-                        + " WHERE   i.id = ? "
-                        + " UNION ALL "
-                        + " SELECT i2.id AS item_id, i2.parent_id, i2.client_parent_file_version, "
-                        + "     i2.filename, iv2.version, i2.is_folder, "
-                        + "     iv2.device_id, i2.workspace_id, iv2.size, iv2.status, i2.mimetype, "
-                        + "     iv2.checksum, iv2.modified_at, "
-                        + "     q.level_array || i2.id "
-                        + String.format(chunks, "iv2")
-                        + " FROM    q "
-                        + " JOIN    item i2 ON i2.parent_id = q.item_id "
-                        + " INNER JOIN item_version iv2 ON i2.id = iv2.item_id AND i2.latest_version = iv2.version "
-                        + " WHERE   array_upper(level_array, 1) < ? " + "	) "
-                        + " SELECT  array_upper(level_array, 1) as level, q.* "
-                        + " FROM    q " + " ORDER BY  "
-                        + "       level_array ASC", targetVersion);
+ 
 
         ResultSet result = null;
         ItemMetadata item = null;
@@ -332,7 +249,7 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
 
         return item;
 
-        */
+        
         
     }
 
@@ -340,35 +257,10 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
     public ItemMetadata findByUserId(UUID userId,
             Boolean includeDeleted,DAOPersistenceContext persistenceContext) throws DAOException {
 
-        /* not used by the moment, only required for API
          // TODO: check include_deleted
          Object[] values = {userId};
 
-         String query = "WITH RECURSIVE q AS "
-         + " ( "
-         + "    SELECT i.id AS item_id, i.parent_id, i.client_parent_file_version, "
-         + "     i.filename, iv.device_id, i.workspace_id, iv.version, i.is_folder, "
-         + "     iv.size, iv.status, i.mimetype, "
-         + "     iv.checksum, iv.modified_at, "
-         + "     ARRAY[i.id] AS level_array, '/' AS path "
-         + "     FROM user1 u  "
-         + "     INNER JOIN workspace_user wu ON u.id = wu.user_id  "
-         + "     INNER JOIN item i ON wu.workspace_id = i.workspace_id  "
-         + "     INNER JOIN item_version iv ON i.id = iv.item_id AND i.latest_version = iv.version  "
-         + "     WHERE u.id = ?::uuid AND i.parent_id IS NULL  "
-         + "     UNION ALL  "
-         + "     SELECT i2.id AS item_id, i2.parent_id, i2.client_parent_file_version,  "
-         + "     i2.filename, iv2.device_id, i2.workspace_id, iv2.version, i2.is_folder,  "
-         + "     iv2.size, iv2.status, i2.mimetype,   "
-         + "     iv2.checksum, iv2.modified_at,  "
-         + "     q.level_array || i2.id, q.path || q.filename::TEXT || '/'  "
-         + "     FROM q  "
-         + "     JOIN item i2 ON i2.parent_id = q.item_id  "
-         + "     INNER JOIN item_version iv2 ON i2.id = iv2.item_id AND i2.latest_version = iv2.version  "
-         + "     WHERE array_upper(level_array, 1) < 1 " + " )  "
-         + " SELECT array_upper(level_array, 1) as level, q.*  "
-         + " FROM q  " + " ORDER BY level_array ASC";
-
+        
          ResultSet result = null;
 
          // create the virtual ItemMetadata for the root folder
@@ -401,7 +293,7 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
 
          return rootMetadata;
                 
-         */
+        
         return null;
     }
 
@@ -409,9 +301,7 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
     public ItemMetadata findItemVersionsById(UUID fileId,DAOPersistenceContext persistenceContext) throws DAOException {
 
 
-        /* not used by the moment, only required for API
-        
-         // TODO: check include_deleted
+    
          Object[] values = {fileId};
 
          String query = "SELECT i.id AS item_id, i.parent_id, i.client_parent_file_version, i.filename, i.is_folder, i.mimetype, i.workspace_id, "
@@ -465,26 +355,11 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
     @Override
     public List<String> migrateItem(UUID itemId, UUID workspaceId,DAOPersistenceContext persistenceContext) throws DAOException {
 
-        /* TODO, used when sharing
+        
         
          Object[] values = {itemId, workspaceId.toString()};
 
-         // This query move items to the new workspace.
-         String query = "WITH    RECURSIVE "
-         + " q AS "
-         + " ( "
-         + " SELECT i.* "
-         + " FROM    item i "
-         + " WHERE   i.id = ? "
-         + " UNION ALL "
-         + " SELECT i2.* "
-         + " FROM    q "
-         + " JOIN    item i2 ON i2.parent_id = q.id "
-         + " ) "
-         + " UPDATE item i3 SET workspace_id = ?::uuid "
-         + " FROM q "
-         + " WHERE q.id = i3.id";
-
+        
          executeUpdate(query, values);
 
          List<String> chunksToMigrate;
@@ -497,14 +372,13 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
 
          return chunksToMigrate;
                 
-         */
+        
         return null;
 
     }
 
     private List<String> getChunksToMigrate(Long itemId,DAOPersistenceContext persistenceContext) throws DAOException, SQLException {
 
-        /* not used function
         
          Object[] values = {itemId};
 
@@ -520,7 +394,7 @@ public class HibernateOGMItemDAO extends HibernateOGMDAO implements ItemDAO {
          }
 
          return chunksList;
-         */
+         
         return null;
     }
 

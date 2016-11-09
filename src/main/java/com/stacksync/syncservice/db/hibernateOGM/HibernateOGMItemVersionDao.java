@@ -28,7 +28,7 @@ public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemV
     public HibernateOGMItemVersionDao() {
         super();
     }
-
+    
     public static ItemMetadata fromItemAndVersionToItemMetadata(Item item, ItemVersion itemVersion,DAOPersistenceContext persistenceContext) {
 
         List<String> chunks = null;
@@ -40,19 +40,7 @@ public class HibernateOGMItemVersionDao extends HibernateOGMDAO implements ItemV
             }
         }
 
-        ItemMetadata itemMetadata = new ItemMetadata(item.getId(),
-                itemVersion.getVersion(),
-                itemVersion.getDevice().getId(),
-                item.getParentId(),
-                item.getClientParentFileVersion(),
-                itemVersion.getStatus(),
-                itemVersion.getModifiedAt(),
-                itemVersion.getChecksum(),
-                itemVersion.getSize(),
-                item.isFolder(),
-                item.getFilename(),
-                item.getMimetype(),
-                chunks);
+        ItemMetadata itemMetadata = new ItemMetadata(item.getId(),itemVersion.getVersion(), itemVersion.getDevice().getId(),item.getParentId(),item.getClientParentFileVersion(),itemVersion.getStatus(),itemVersion.getModifiedAt(),itemVersion.getChecksum(),itemVersion.getSize(),item.isFolder(),item.getFilename(),item.getMimetype(),chunks);
 
         return itemMetadata;
 

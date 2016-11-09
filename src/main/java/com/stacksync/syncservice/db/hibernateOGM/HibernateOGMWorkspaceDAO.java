@@ -35,7 +35,7 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
 
     @Override
     public List<Workspace> getByUserId(UUID userId, DAOPersistenceContext persistenceContext) throws DAOException {
-        /*try {
+        try {
 
             User user = (User) persistenceContext.getEntityManager().find(User.class, userId);
 
@@ -60,7 +60,7 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
         } catch (HibernateException e) {
             logger.error(e);
             throw new DAOException(DAOError.INTERNAL_SERVER_ERROR);
-        }*/
+        }
         
         return null;
     }
@@ -68,7 +68,7 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
     @Override
     public Workspace getDefaultWorkspaceByUserId(UUID userId, DAOPersistenceContext persistenceContext) throws DAOException {
 
-        /*
+        
             try {
             User user = (User) persistenceContext.getEntityManager().find(User.class, userId);
 
@@ -94,7 +94,7 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
             logger.error(e);
             throw new DAOException(DAOError.INTERNAL_SERVER_ERROR);
         }
-        */
+        
         return null;
     }
 
@@ -115,7 +115,7 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
 
     @Override
     public void update(User user, Workspace workspace,DAOPersistenceContext persistenceContext) throws DAOException {
-        /*if (workspace.getId() == null || user.getId() == null) {
+        if (workspace.getId() == null || user.getId() == null) {
             throw new IllegalArgumentException("Attributes not set");
         }
 
@@ -132,8 +132,7 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
         }
 
         userWorkspace.setName(workspace.getName());
-
-        */
+        
         
         persistenceContext.getEntityManager().merge(workspace);
     }
@@ -171,7 +170,7 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
     @Override
     public void deleteUser(User user, Workspace workspace, DAOPersistenceContext persistenceContext) throws DAOException {
 
-        /*
+        
         if (user == null || !user.isValid()) {
             throw new IllegalArgumentException("User not valid");
         } else if (workspace == null || !workspace.isValid()) {
@@ -183,7 +182,7 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
 
         if(userWorkspace!=null)
             persistenceContext.getEntityManager().remove(userWorkspace);
-        */
+        
     }
 
     @Override
@@ -199,7 +198,7 @@ public class HibernateOGMWorkspaceDAO extends HibernateOGMDAO implements Workspa
 
         Workspace workspace = (Workspace) persistenceContext.getEntityManager().find(Workspace.class, workspaceId);
 
-        //return workspace.getWorkspaceUsers();
+        return workspace.getWorkspaceUsers();
 
         return null;
     }
